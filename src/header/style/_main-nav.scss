@@ -1,0 +1,57 @@
+/* src/header/style/_main-nav.scss - MainNav.vue 컴포넌트 전용 스타일 */
+
+.main-nav {
+  ul {
+    list-style: none; // 리스트 마커 제거
+    padding: 0;
+    margin: 0;
+    display: flex; // 메뉴 항목들을 가로로 배치
+    gap: 25px; // 메뉴 항목 간격
+  }
+
+  .nav-link {
+    text-decoration: none; // 링크 밑줄 제거
+    color: #555;          // 기본 글자색
+    font-size: 1.1em;
+    padding: 5px 0;
+    display: flex;       // span과 화살표를 가로로 배치하기 위해 flex 추가
+    align-items: center; // 세로 중앙 정렬
+    gap: 5px;            // 텍스트와 화살표 사이 간격
+    transition: color 0.3s ease-in-out; // 부드러운 색상 전환
+
+    .nav-arrow {
+      font-size: 0.9em;  // 화살표 크기 조절
+      opacity: 0.8;      // 약간 투명하게
+      transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; // 호버 시 전환 효과
+      transform: translateX(0px); // 초기 위치
+    }
+
+    &:hover, &.router-link-exact-active { // 호버 및 현재 활성화된 메뉴 강조
+      color: #42b883; // Vue 색상 계열로 하이라이트
+      border-bottom: 2px solid #42b883; // 밑줄 강조 효과
+      .nav-arrow {
+        transform: translateX(3px); // 호버 시 화살표가 오른쪽으로 살짝 이동
+        opacity: 1;                 // 호버 시 투명도 100%
+      }
+    }
+  }
+}
+
+/* --- 미디어 쿼리 (MainNav.vue 관련) --- */
+
+/* --- 태블릿 (768px 이상 ~ 1023px 이하) 스타일 --- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .main-nav ul {
+    gap: 20px;
+  }
+  .main-nav .nav-link {
+    font-size: 1em;
+  }
+}
+
+/* --- 모바일 (767px 이하) 스타일 --- */
+@media (max-width: 767px) {
+  .main-nav {
+    display: none; // ⭐ 모바일 기본: 메인 내비게이션 숨김 (햄버거 메뉴로 토글 예정) ⭐
+  }
+}

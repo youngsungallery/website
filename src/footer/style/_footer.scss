@@ -1,0 +1,42 @@
+/* src/footer/style/_footer.scss - TheFooter.vue 컴포넌트 전체 레이아웃 스타일 */
+
+.app-footer {
+  display: flex;
+  flex-direction: column; /* PC 기본값은 세로 정렬 (각 섹션이 한 줄에 100% 차지하도록) */
+  align-items: center;    /* 가운데 정렬 */
+  padding: 20px;
+  margin-top: 50px;
+  border-top: 1px solid #eee;
+  color: #666;
+  font-size: 0.9em;
+  text-align: center;
+  background-color: #f9f9f9;
+}
+
+.footer-divider {
+  display: block; /* 모든 디바이스에서 구분선 보이도록 */
+  width: 80%;
+  max-width: 400px;
+  border: 0;
+  height: 1px;
+  background-color: #ddd;
+  margin: 10px 0; /* 간격 조절 */
+}
+
+/* --- 미디어 쿼리 (TheFooter.vue 전체 레이아웃 관련) --- */
+
+/* --- 태블릿 (768px 이상 ~ 1023px 이하) 스타일 --- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app-footer {
+    padding: 20px;
+    font-size: 0.85em; /* 폰트 크기 약간 줄임 */
+  }
+}
+
+/* --- 모바일 (767px 이하) 스타일 --- */
+@media (max-width: 767px) {
+  .app-footer {
+    padding: 15px;
+    font-size: 0.8em; /* 폰트 크기 줄임 */
+  }
+}

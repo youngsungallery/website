@@ -1,0 +1,24 @@
+/* src/footer/style/_copyright-section.scss */
+.footer-section.copyright-section {
+  padding: 5px 0; /* 간격 조절 */
+  margin: 0;
+  width: 100%;    /* 섹션이 항상 전체 너비를 차지 */
+  max-width: 800px; /* 전체 푸터 내용이 너무 넓어지지 않도록 최대 너비 제한 */
+  text-align: center;
+}
+.server-time {
+  font-size: 0.8em;
+  color: #888;
+  margin: 5px 0 0 0;
+  padding: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .server-time { font-size: 0.75em; }
+}
+@media (max-width: 767px) {
+  .server-time { font-size: 0.7em; }
+}

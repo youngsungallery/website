@@ -1,0 +1,75 @@
+/* src/header/style/_main-header.scss - MainHeader.vue 컴포넌트 전체 레이아웃 스타일 */
+
+// --- 전역 변수나 믹스인 등을 여기에 임포트할 수 있습니다 (나중에) ---
+// @use '@/styles/variables' as var;
+// @use '@/styles/mixins' as mx;
+
+/* --- PC 기본 스타일 (Desktop First 접근) --- */
+.app-header {
+  width: 100%;
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+  padding: 10px 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 60px;
+}
+
+/* --- 새로 추가된 header-right-group 스타일 --- */
+.header-right-group {
+  display: flex;
+  align-items: center;
+  gap: 30px; // 메뉴와 유틸리티 버튼 사이의 간격
+  justify-content: flex-end; // 이 그룹 안의 내용들을 오른쪽으로 정렬
+}
+
+/* --- 헤더 우측 유틸리티 영역 (나중에 활용) --- */
+.header-right-utility {
+  width: auto; // 콘텐츠에 따라 유동적으로
+  min-width: 50px; // 최소 너비 지정
+  text-align: right;
+  // 나중에 관리자 버튼이나 검색 아이콘 등이 들어갈 자리
+}
+
+/* --- 미디어 쿼리 (MainHeader.vue 전체 레이아웃 관련) --- */
+
+/* --- 태블릿 (768px 이상 ~ 1023px 이하) 스타일 --- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .header-inner {
+    height: 55px;
+    max-width: 960px;
+  }
+  .header-right-group {
+    gap: 20px; // 태블릿에서 메뉴와 유틸리티 버튼 사이 간격 조정
+  }
+}
+
+/* --- 모바일 (767px 이하) 스타일 --- */
+@media (max-width: 767px) {
+  .app-header {
+    padding: 8px 15px;
+  }
+  .header-inner {
+    height: 50px;
+    // 모바일에서는 로고와 햄버거 메뉴만 기본으로 보이고,
+    // 내비게이션은 숨김 처리 후 햄버거 메뉴를 통해 토글됩니다.
+  }
+  .header-logo-container { // HeaderLogo.vue의 컨테이너를 여기서 제어
+    flex-grow: 1; // 로고가 왼쪽 공간을 충분히 차지
+    justify-content: flex-start;
+  }
+  .header-right-group {
+    display: none; // ⭐ 모바일 기본: 우측 그룹 전체 숨김 (햄버거 메뉴로 대체 예정) ⭐
+  }
+  // 나중에 햄버거 메뉴 버튼, 열렸을 때 내비게이션 노출 등 추가 로직/스타일 필요
+}

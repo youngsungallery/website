@@ -2,14 +2,18 @@
 <template>
   <div class="main-layout-wrapper">
     <MainHeader />
-    <router-view /> <!-- HomeView 또는 다른 본 사이트 페이지 뷰가 여기에 렌더링됩니다. -->
+    <div class="main-content">
+      <router-view /> <!-- HomeView 또는 다른 본 사이트 페이지 뷰가 여기에 렌더링됩니다. -->
+    </div>
     <TheFooter />
   </div>
 </template>
 
 <script setup>
-import MainHeader from '@/components/MainHeader.vue';
-import TheFooter from '@/components/TheFooter.vue';
+// ⭐⭐ MainHeader는 src/header 폴더에서 가져옵니다. ⭐⭐
+import MainHeader from '@/header/MainHeader.vue';
+// ⭐⭐ TheFooter는 src/footer 폴더에서 가져옵니다. ⭐⭐
+import TheFooter from '@/footer/TheFooter.vue'; 
 </script>
 
 <style scoped lang="scss">
@@ -19,5 +23,9 @@ import TheFooter from '@/components/TheFooter.vue';
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
+}
+
+.main-content {
+  flex-grow: 1;
 }
 </style>
