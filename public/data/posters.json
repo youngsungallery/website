@@ -1,0 +1,57 @@
+[
+  {
+    "id": 5,
+    "type": "exhibition",
+    "title": "겨울의 숨결",
+    "startDate": "2025-12-10T00:00:00+09:00",
+    "endDate": "2026-01-05T23:59:59+09:00",
+    "posterImage": {
+      "url": "https://raw.githubusercontent.com/youngsungallery/IMG_DB/main/youngsungallery/exh/exh_main_2025_12_10.png"
+    },
+    "lecture": null
+  },
+  {
+    "id": 4,
+    "type": "exhibition",
+    "title": "추향-가을소리",
+    "startDate": "2025-11-01T00:00:00+09:00",
+    "endDate": "2025-11-30T23:59:59+09:00",
+    "posterImage": {
+      "url": "https://raw.githubusercontent.com/youngsungallery/IMG_DB/main/youngsungallery/exh/exh_main_2025_11_01.png"
+    },
+    "lecture": {
+      "name": "박 작가와의 대화",
+      "date": "2025-11-15T14:00:00+09:00",
+      "speaker": "박 작가"
+    }
+  },
+  {
+    "id": 3,
+    "type": "exhibition",
+    "title": "여름드로잉전",
+    "startDate": "2024-08-01T00:00:00+09:00",
+    "endDate": "2024-08-15T23:59:59+09:00",
+    "posterImage": {
+      "url": "https://raw.githubusercontent.com/youngsungallery/IMG_DB/main/youngsungallery/exh/exh_main_2024_08_01.png"
+    },
+    "lecture": null
+  },
+  {
+    "id": 2,
+    "type": "lecture",
+    "name": "화요일 아트토크",
+    "date": "2025-11-20T19:00:00+09:00",
+    "speaker": "김 강사"
+  },
+  {
+    "id": 1,
+    "type": "exhibition",
+    "title": "봄빛 작은전",
+    "startDate": "2024-05-10T00:00:00+09:00",
+    "endDate": "2024-05-20T23:59:59+09:00",
+    "posterImage": {
+      "url": "https://raw.githubusercontent.com/youngsungallery/IMG_DB/main/youngsungallery/exh/exh_main_2024_05_10.png"
+    },
+    "lecture": null
+  }
+]
