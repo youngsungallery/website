@@ -1,7 +1,7 @@
 <template>
   <section id="exhibition-history" class="section">
     <h2>전시 이력</h2>
-    <p>지난 전시 기록들을 여기에 표시됩니다.</p>
+    <p>지난 전시 기록들을 여기에 표시할 예정입니다.</p>
 
     <div class="exhibition-list">
       <div v-if="loading" class="loading">전시 이력을 불러오는 중입니다...</div>
@@ -14,7 +14,7 @@
           </div>
           <div class="item-details">
             <h3>{{ exhibition.title }}</h3>
-            <p v-if="exhibition.date" class="item-date">{{ exhibition.date }}</p> <!-- ✨ exhibition.period -> exhibition.date 수정! ✨ -->
+            <p v-if="exhibition.date" class="item-date">{{ exhibition.date }}</p>
             <p v-if="exhibition.desc" class="item-description">{{ exhibition.desc }}</p>
           </div>
         </li>

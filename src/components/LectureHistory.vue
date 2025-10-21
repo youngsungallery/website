@@ -8,13 +8,8 @@
       <div v-else-if="error" class="error">특강 이력을 불러오는데 오류가 발생했습니다: {{ error }}</div>
       <div v-else-if="!loading && !error && allLectures.length === 0" class="no-data">아직 등록된 특강 이력이 없습니다.</div>
       <ul v-else class="lectures-grid">
-        <!-- ✨ 여기에 `:class` 바인딩을 추가해줄게! ✨ -->
         <li v-for="lecture in displayedLectures" :key="lecture.id" 
-            class="lecture-item" :class="{ 'no-image': !lecture.image }">
-          
-          <div v-if="lecture.image" class="item-thumbnail"> <!-- ✨ 이미지가 있을 때만 썸네일 영역 생성 ✨ -->
-            <img :src="lecture.image" :alt="lecture.title + ' 포스터'" class="lecture-poster">
-          </div>
+            class="lecture-item">
           
           <div class="item-details">
             <h3>{{ lecture.title }}</h3>
@@ -29,7 +24,6 @@
 </template>
 
 <script setup>
-// 스크립트 내용은 이전과 동일하게 유지
 import { ref, onMounted, computed } from 'vue';
 
 const allLectures = ref([]);

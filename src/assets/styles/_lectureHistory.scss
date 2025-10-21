@@ -8,6 +8,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+  width: 100%; /* ✨ 부모 너비를 꽉 채우도록 ✨ */
 }
 
 .lecture-list {
@@ -15,7 +17,7 @@
   max-width: 1200px;
   width: 100%;
   padding: 0 20px;
-  box-sizing: border-box;
+  box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
 }
 
 .lectures-grid {
@@ -25,6 +27,7 @@
   display: block;
   width: 100%;
   max-width: 800px;
+  box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
 }
 
 .lecture-item {
@@ -33,39 +36,20 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   padding: 20px;
   margin-bottom: 40px;
-  display: flex;
-  align-items: flex-start;
   text-align: left;
-  gap: 20px; // 기본적으로 포스터와 내용 사이 간격
   transition: transform 0.2s ease-in-out;
-
-  // ✨ 이미지가 없는 경우 ✨
-  &.no-image {
-    gap: 0; // 간격을 없애서 내용이 왼쪽으로 완전히 밀착!
-    // .item-details는 flex-grow: 1이므로 자연스럽게 왼쪽 끝으로 밀착될 거야.
-  }
+  box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+  width: 100%; /* ✨ 부모의 100%를 차지하게 ✨ */
 
   &:hover {
     transform: translateY(-5px);
   }
 
-  .item-thumbnail {
-    flex-shrink: 0;
-    width: 150px;
-  }
-
-  .lecture-poster {
-    max-width: 100%;
-    height: auto;
-    border-radius: 4px;
-    margin: 0;
-    display: block;
-  }
-
   .item-details {
-    flex-grow: 1;
-    padding-top: 5px;
+    padding-top: 0;
+    width: 100%;
     text-align: left;
+    box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
 
     h3 {
       font-size: 1.5em;

@@ -9,33 +9,36 @@
   padding: 15px 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   z-index: 1000;
+  box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+}
 
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    gap: 30px;
+.main-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+}
 
-    .brand-logo {
-      font-size: 1.3em;
-      font-weight: bold;
-      color: #007bff;
-      margin-right: 20px;
-    }
+.main-nav .brand-logo {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #007bff;
+  margin-right: 20px;
+}
 
-    a {
-      text-decoration: none;
-      color: #333;
-      font-weight: bold;
-      font-size: 1.1em;
-      padding: 5px 10px;
-      transition: color 0.3s ease;
+.main-nav a {
+  text-decoration: none;
+  color: #333;
+  font-weight: bold;
+  font-size: 1.1em;
+  padding: 5px 10px;
+  transition: color 0.3s ease;
+  box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
 
-      &:hover { // Sass의 부모 선택자 참조 (&)
-        color: #007bff;
-      }
-    }
+  &:hover {
+    color: #007bff;
   }
 }

@@ -2,22 +2,25 @@
 
 .section {
   padding: 80px 20px;
-  min-height: 100vh; // 각 섹션을 뷰포트 높이만큼
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box; // 패딩 포함 높이 계산
+  box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+  width: 100%; /* ✨ 부모 너비를 꽉 채우되 ✨ */
+  max-width: 100vw; /* ✨ 뷰포트 너비를 넘지 않도록 강제 ✨ */
+  overflow-x: hidden; /* ✨ 섹션 내부에서 넘치는 내용 숨김 ✨ */
+}
 
-  h2 { // Sass의 중첩(nesting) 기능 활용!
-    font-size: 2.5em;
-    margin-bottom: 30px;
-    color: #333;
-  }
+.section h2 {
+  font-size: 2.5em;
+  margin-bottom: 30px;
+  color: #333;
+}
 
-  p { // Sass의 중첩(nesting) 기능 활용!
-    font-size: 1.2em;
-    color: #555;
-    text-align: center;
-  }
+.section p {
+  font-size: 1.2em;
+  color: #555;
+  text-align: center;
 }

@@ -23,7 +23,6 @@
     <!-- ✨ 특강 정보 표시 영역 (전시 정보 아래에 추가) ✨ -->
     <div v-if="currentLecture" class="current-lecture-card">
       <div class="card-thumbnail">
-        <!-- 특강 포스터는 갤러리와 동일한 포맷을 유지하고 image 필드를 사용 (아예 없을 경우도 고려) -->
         <img v-if="currentLecture.image" :src="currentLecture.image" :alt="currentLecture.title + ' 포스터'" class="card-poster">
       </div>
       <div class="card-details">
@@ -46,7 +45,6 @@ const error = ref(null);
 
 onMounted(async () => {
   try {
-    // 1. 전시 데이터 불러오기
     const exhibitionResponse = await fetch('/data/exhibitions.json'); 
     if (!exhibitionResponse.ok) {
       throw new Error(`Exhibition data HTTP error! status: ${exhibitionResponse.status}`);
@@ -56,7 +54,6 @@ onMounted(async () => {
       currentExhibition.value = exhibitionData[0]; // 첫 번째 항목 (최신으로 가정)
     }
 
-    // 2. 특강 데이터 불러오기
     const lectureResponse = await fetch('/data/lectures.json');
     if (!lectureResponse.ok) {
       throw new Error(`Lecture data HTTP error! status: ${lectureResponse.status}`);
@@ -77,7 +74,7 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 @use '../assets/styles/baseSection.scss';
-@use '../assets/styles/_exhibitionSchedule.scss'; // 이 컴포넌트만의 스타일
+@use '../assets/styles/_exhibitionSchedule.scss';
 
 .loading, .error, .no-data {
   font-size: 1.2em;

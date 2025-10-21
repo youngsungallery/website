@@ -1,40 +1,38 @@
 <template>
   <div id="app">
-    <!-- AppHeader 컴포넌트를 불러와서 사용 -->
     <AppHeader /> 
-
     <main>
       <ExhibitionSchedule />
       <ExhibitionHistory />
       <LectureHistory />
     </main>
+    <AppFooter />
   </div>
 </template>
 
 <script setup>
-// 새로 만든 AppHeader 컴포넌트를 import!
 import AppHeader from './components/AppHeader.vue';
 import ExhibitionSchedule from './components/ExhibitionSchedule.vue';
 import ExhibitionHistory from './components/ExhibitionHistory.vue';
 import LectureHistory from './components/LectureHistory.vue';
+import AppFooter from './components/AppFooter.vue';
 </script>
 
-<style>
-@use '../assets/styles/_appHeader.scss';
+<style lang="scss">
 /* 전역 스타일 */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   scroll-behavior: smooth;
+  overflow-x: hidden; /* ✨ 가장 중요! 수평 스크롤 강제 숨김 ✨ */
 }
 
 #app {
-  text-align: center;
+  text-align: center; /* 앱의 전체 컨텐츠를 중앙 정렬 (이건 좌우 스크롤과 무관) */
   color: #2c3e50;
-  /* AppHeader가 fixed로 되어있어 콘텐츠가 겹칠 수 있으므로 padding-top을 추가해줘 */
-  padding-top: 80px; /* main-nav의 대략적인 높이 + 여백 */
+  padding-top: 80px;
+  /* ✨ #app 자체가 좌우로 넘치지 않도록 최대 너비 설정 ✨ */
+  max-width: 100vw; 
+  overflow-x: hidden; /* ✨ 혹시 #app 내부에서 넘치더라도 숨김 ✨ */
 }
-
-/* App.vue에 있던 내비게이션 관련 스타일은 AppHeader.vue로 이동했어. */
-
 </style>

@@ -1,0 +1,111 @@
+/* website/src/assets/styles/_appFooter.scss */
+
+.app-footer {
+  background-color: #fcfcfc;
+  padding: 80px 20px 50px 20px;
+  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  font-size: 0.85em;
+  color: #777;
+  text-align: center;
+  margin-top: 100px;
+  box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+  width: 100%; /* ✨ 부모 너비를 꽉 채우도록 ✨ */
+  max-width: 100vw; /* ✨ 뷰포트 너비를 넘지 않도록 강제 ✨ */
+  overflow-x: hidden; /* ✨ 푸터 내부에서 넘치는 내용 숨김 ✨ */
+
+  .footer-bottom {
+    max-width: 900px; /* ✨ 푸터 내용 컨테이너의 최대 너비 ✨ */
+    width: 100%; /* ✨ 부모의 100%를 차지하게 ✨ */
+    margin: 0 auto;
+    background-color: #3f3f3f;
+    color: #cecece;
+    padding: 30px 20px; /* ✨ 양쪽 20px 패딩으로 변경 ✨ */
+    position: relative;
+    box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+
+    &::before, &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background-color: #555;
+    }
+    &::before {
+      top: 0;
+    }
+    &::after {
+      bottom: 0;
+    }
+
+    .footer-top-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      width: 100%; /* ✨ 부모의 100%를 차지하게 ✨ */
+      box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+
+      h3 {
+        font-size: 1.1em;
+        color: #e0e0e0;
+        font-weight: bold;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+      }
+
+      p.copyright {
+        margin: 0;
+        font-size: 0.8em;
+        color: #b0b0b0;
+        white-space: nowrap;
+      }
+    }
+
+    p {
+      margin-bottom: 5px;
+      font-size: 0.8em;
+      color: #b0b0b0;
+      line-height: 1.5;
+
+      &.tech-info {
+        margin-top: 25px;
+      }
+    }
+
+    .social-section {
+      margin-top: 20px;
+      margin-bottom: 25px;
+      width: 100%; /* ✨ 부모의 100%를 차지하게 ✨ */
+      box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+
+      .social-heading {
+        font-weight: bold;
+        color: #e0e0e0;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: 0.85em;
+      }
+
+      .social-link-item {
+        margin-bottom: 8px;
+        font-size: 0.8em;
+        width: 100%; /* ✨ 부모의 100%를 차지하게 ✨ */
+        box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+
+        a {
+          color: #a0a0a0;
+          text-decoration: none;
+          transition: color 0.3s ease;
+
+          &:hover {
+            color: #d0d0d0;
+          }
+        }
+      }
+    }
+  }
+}
