@@ -1,0 +1,23 @@
+/* website/src/assets/styles/baseSection.scss */
+
+.section {
+  padding: 80px 20px;
+  min-height: 100vh; // 각 섹션을 뷰포트 높이만큼
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box; // 패딩 포함 높이 계산
+
+  h2 { // Sass의 중첩(nesting) 기능 활용!
+    font-size: 2.5em;
+    margin-bottom: 30px;
+    color: #333;
+  }
+
+  p { // Sass의 중첩(nesting) 기능 활용!
+    font-size: 1.2em;
+    color: #555;
+    text-align: center;
+  }
+}

@@ -1,0 +1,41 @@
+/* website/src/assets/styles/_appHeader.scss */
+
+.main-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 15px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+
+    .brand-logo {
+      font-size: 1.3em;
+      font-weight: bold;
+      color: #007bff;
+      margin-right: 20px;
+    }
+
+    a {
+      text-decoration: none;
+      color: #333;
+      font-weight: bold;
+      font-size: 1.1em;
+      padding: 5px 10px;
+      transition: color 0.3s ease;
+
+      &:hover { // Sass의 부모 선택자 참조 (&)
+        color: #007bff;
+      }
+    }
+  }
+}
