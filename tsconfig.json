@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    // ... 다른 설정들 ...
+    "experimentalDecorators": true, // 이 부분을 추가하거나 true로 설정
+    "emitDecoratorMetadata": true   // 이 부분도 함께 true로 설정 (선택 사항이지만 함께 사용하는 경우가 많아)
+  },
+  // ...
+}

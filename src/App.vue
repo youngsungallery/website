@@ -20,6 +20,7 @@ import LectureHistory from './components/LectureHistory.vue';
 </script>
 
 <style>
+@use '../assets/styles/_appHeader.scss';
 /* 전역 스타일 */
 body {
   margin: 0;
