@@ -1,22 +1,88 @@
 <template>
   <section id="exhibition-schedule" class="section">
     <h2>전시 일정</h2>
-    <p>다가오는 전시 정보를 여기에 표시할 예정입니다.</p>
-    <div style="height: 500px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center;">
-      <!-- 전시 일정 데이터가 들어갈 공간 -->
-      <p>전시 일정 내용</p>
+    <p>다가오는 전시 및 특강 정보를 여기에 표시할 예정입니다.</p>
+
+    <!-- 로딩, 에러 처리 -->
+    <div v-if="loading" class="loading">전시/특강 정보를 불러오는 중입니다...</div>
+    <div v-else-if="error" class="error">정보를 불러오는데 오류가 발생했습니다: {{ error }}</div>
+    
+    <!-- ✨ 전시 정보 표시 영역 ✨ -->
+    <div v-else-if="currentExhibition" class="current-exhibition-card">
+      <div class="card-thumbnail">
+        <img v-if="currentExhibition.image" :src="currentExhibition.image" :alt="currentExhibition.title + ' 포스터'" class="card-poster">
+      </div>
+      <div class="card-details">
+        <h3>{{ currentExhibition.title }}</h3>
+        <p v-if="currentExhibition.date" class="card-date">{{ currentExhibition.date }}</p>
+        <p v-if="currentExhibition.desc" class="card-description">{{ currentExhibition.desc }}</p>
+      </div>
     </div>
+    <div v-else-if="!currentExhibition && !currentLecture" class="no-data">등록된 전시/특강 일정이 없습니다.</div>
+    
+    <!-- ✨ 특강 정보 표시 영역 (전시 정보 아래에 추가) ✨ -->
+    <div v-if="currentLecture" class="current-lecture-card">
+      <div class="card-thumbnail">
+        <!-- 특강 포스터는 갤러리와 동일한 포맷을 유지하고 image 필드를 사용 (아예 없을 경우도 고려) -->
+        <img v-if="currentLecture.image" :src="currentLecture.image" :alt="currentLecture.title + ' 포스터'" class="card-poster">
+      </div>
+      <div class="card-details">
+        <h3>{{ currentLecture.title }}</h3>
+        <p v-if="currentLecture.SLI" class="card-instructor">강사: {{ currentLecture.SLI }}</p>
+        <p v-if="currentLecture.date" class="card-date">{{ currentLecture.date }}</p>
+      </div>
+    </div>
+
   </section>
 </template>
 
 <script setup>
-// 필요한 스크립트 로직 (데이터 불러오기 등)
+import { ref, onMounted } from 'vue';
+
+const currentExhibition = ref(null); // 최신 전시 데이터
+const currentLecture = ref(null);    // 최신 특강 데이터
+const loading = ref(true);
+const error = ref(null);
+
+onMounted(async () => {
+  try {
+    // 1. 전시 데이터 불러오기
+    const exhibitionResponse = await fetch('/data/exhibitions.json'); 
+    if (!exhibitionResponse.ok) {
+      throw new Error(`Exhibition data HTTP error! status: ${exhibitionResponse.status}`);
+    }
+    const exhibitionData = await exhibitionResponse.json();
+    if (exhibitionData && exhibitionData.length > 0) {
+      currentExhibition.value = exhibitionData[0]; // 첫 번째 항목 (최신으로 가정)
+    }
+
+    // 2. 특강 데이터 불러오기
+    const lectureResponse = await fetch('/data/lectures.json');
+    if (!lectureResponse.ok) {
+      throw new Error(`Lecture data HTTP error! status: ${lectureResponse.status}`);
+    }
+    const lectureData = await lectureResponse.json();
+    if (lectureData && lectureData.length > 0) {
+      currentLecture.value = lectureData[0]; // 첫 번째 항목 (최신으로 가정)
+    }
+
+  } catch (err) {
+    console.error("전시/특강 데이터를 가져오는 중 오류 발생:", err);
+    error.value = err.message;
+  } finally {
+    loading.value = false;
+  }
+});
 </script>
 
 <style lang="scss" scoped>
-@use '../assets/styles/baseSection.scss'; // ✨ @import 대신 @use 사용! ✨
+@use '../assets/styles/baseSection.scss';
+@use '../assets/styles/_exhibitionSchedule.scss'; // 이 컴포넌트만의 스타일
 
-#exhibition-schedule {
-  background-color: #fff;
+.loading, .error, .no-data {
+  font-size: 1.2em;
+  color: #777;
+  text-align: center;
+  padding: 50px;
 }
 </style>

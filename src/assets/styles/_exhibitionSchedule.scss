@@ -1,0 +1,85 @@
+/* website/src/assets/styles/_exhibitionSchedule.scss */
+
+#exhibition-schedule {
+  background-color: #fff;
+  min-height: 100vh;
+  padding-top: 40px; // 섹션 상단 여백
+  padding-bottom: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+// ✨ 전시 일정 카드 공통 스타일 ✨
+.current-exhibition-card, .current-lecture-card { // ✨ 두 카드에 공통 스타일 적용 ✨
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  max-width: 900px;
+  width: 100%;
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  
+  text-align: left; // 카드 내 텍스트는 기본적으로 왼쪽 정렬 (일부 요소는 재정의)
+  
+  .card-thumbnail {
+    flex-shrink: 0;
+    width: 300px; // 포스터 크기를 더 크게 설정
+    margin-bottom: 20px; // 포스터와 하단 정보 사이의 간격
+    text-align: center;
+  }
+
+  .card-poster {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .card-details {
+    flex-grow: 1;
+    margin-top: 0; 
+    width: 100%;
+    max-width: 600px; // 내용이 너무 넓어지지 않도록 최대 너비 설정 (옵션)
+    text-align: left;
+
+    h3 {
+      font-size: 2em; // 제목을 더 크게
+      font-weight: bold;
+      color: #222;
+      margin-top: 0;
+      margin-bottom: 15px;
+      line-height: 1.2;
+      text-align: left;
+    }
+
+    p {
+      font-size: 1.1em; // 내용 글자 크기 조정
+      color: #444;
+      margin-bottom: 8px;
+      line-height: 1.6;
+      text-align: left;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+// ✨ 전시 일정 카드 전용 마진 (상단 여백) ✨
+.current-exhibition-card {
+  margin-top: 40px; 
+}
+
+// ✨ 특강 일정 카드 전용 마진 (전시 카드와의 간격) ✨
+.current-lecture-card {
+  margin-top: 40px; // 전시 카드와 특강 카드 사이의 간격
+  // 필요하다면 특강 카드의 배경색을 다르게 해서 시각적으로 구분할 수 있어.
+  // background-color: #f0f8ff; 
+}
