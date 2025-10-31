@@ -1,7 +1,7 @@
 <template>
   <section id="exhibition-schedule" class="section">
     <h2>전시 일정</h2>
-    <p>다가오는 전시 및 특강 정보를 여기에 표시할 예정입니다.</p>
+    <p>최근 전시 일정을 보실 수 있습니다.</p>
 
     <!-- 로딩, 에러 처리 -->
     <div v-if="loading" class="loading">전시/특강 정보를 불러오는 중입니다...</div>

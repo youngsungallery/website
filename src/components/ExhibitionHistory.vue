@@ -1,7 +1,7 @@
 <template>
   <section id="exhibition-history" class="section">
     <h2>전시 이력</h2>
-    <p>지난 전시 기록들을 여기에 표시할 예정입니다.</p>
+    <p>지난 전시 기록들을 보실수 있습니다.</p>
 
     <div class="exhibition-list">
       <div v-if="loading" class="loading">전시 이력을 불러오는 중입니다...</div>

@@ -30,7 +30,6 @@ body {
 #app {
   text-align: center; /* 앱의 전체 컨텐츠를 중앙 정렬 (이건 좌우 스크롤과 무관) */
   color: #2c3e50;
-  padding-top: 80px;
   /* ✨ #app 자체가 좌우로 넘치지 않도록 최대 너비 설정 ✨ */
   max-width: 100vw; 
   overflow-x: hidden; /* ✨ 혹시 #app 내부에서 넘치더라도 숨김 ✨ */
