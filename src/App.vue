@@ -21,14 +21,14 @@ onMounted(() => {
 
     window.netlifyIdentity.on("init", user => {
       console.log("Netlify Identity initialized:", user);
-      if (!user) {
-        // ✨ 이 부분의 주석을 해제해서 위젯을 명시적으로 열도록 변경! ✨
-        window.netlifyIdentity.open(); // 페이지 로드 시 바로 위젯(로그인 창)이 열려!
-      }
+      // if (!user) {
+        // ✨ 이 부분의 주석을 다시 처리하거나 삭제! ✨
+        // window.netlifyIdentity.open(); 
+      // }
     });
 
-    // ✨ 페이지 로드 시 무조건 위젯을 열고 싶으면 아래 주석 해제 (테스트 목적) ✨
-    // window.netlifyIdentity.open();
+    // ✨ 아래 줄도 만약 활성화되어 있었다면 주석 처리! ✨
+    // window.netlifyIdentity.open(); 
   } else {
     console.error('Netlify Identity widget script not found in window.');
     console.log('Ensure the script tag is correctly placed in index.html and loaded.');
