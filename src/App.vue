@@ -1,21 +1,20 @@
 <template>
   <div id="app">
     <AppHeader /> 
+
     <main>
-      <ExhibitionSchedule />
-      <ExhibitionHistory />
-      <LectureHistory />
+      <router-view /> 
     </main>
+
     <AppFooter />
   </div>
 </template>
 
 <script setup>
 import AppHeader from './components/AppHeader.vue';
-import ExhibitionSchedule from './components/ExhibitionSchedule.vue';
-import ExhibitionHistory from './components/ExhibitionHistory.vue';
-import LectureHistory from './components/LectureHistory.vue';
 import AppFooter from './components/AppFooter.vue';
+// ✨ 중요: ExhibitionSchedule, ExhibitionHistory, LectureHistory는 이제 App.vue에서 직접 임포트하지 않아! ✨
+// ✨ 이 컴포넌트들은 HomeView.vue 안에서 임포트될 거야. ✨
 </script>
 
 <style lang="scss">
@@ -24,14 +23,13 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
   scroll-behavior: smooth;
-  overflow-x: hidden; /* ✨ 가장 중요! 수평 스크롤 강제 숨김 ✨ */
+  overflow-x: hidden;
 }
 
 #app {
-  text-align: center; /* 앱의 전체 컨텐츠를 중앙 정렬 (이건 좌우 스크롤과 무관) */
+  text-align: center;
   color: #2c3e50;
-  /* ✨ #app 자체가 좌우로 넘치지 않도록 최대 너비 설정 ✨ */
-  max-width: 100vw; 
-  overflow-x: hidden; /* ✨ 혹시 #app 내부에서 넘치더라도 숨김 ✨ */
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 </style>
