@@ -1,54 +1,36 @@
 <template>
   <div class="admin-page">
     <h1>관리자 페이지</h1>
-    <p>여기는 관리자만 접근해야 하는 페이지입니다. 현재는 임시 화면입니다.</p>
-    <p>인증 기능은 다음 단계에서 추가될 예정입니다.</p>
+    <p>여기는 관리자만 접근해야 하는 페이지입니다.</p>
+    <p>Netlify Identity 위젯이 여기에 표시됩니다.</p>
     
-    <!-- Netlify Identity 로그인 버튼 -->
-    <button @click="openNetlifyIdentityLogin" class="netlify-login-btn">
-      Netlify Identity 로그인
-    </button>
-
-    <!-- ✨ 새로 추가하는 버튼: 강제로 비밀번호 설정 화면 띄우기! ✨ -->
-    <button @click="forceOpenPasswordSet" class="netlify-login-btn force-password-btn">
-      (긴급) 비밀번호 재설정 창 띄우기
-    </button>
+    <!-- ✨ Netlify Identity 위젯이 삽입될 div 태그 추가! ✨ -->
+    <!-- `data-netlify-identity-button`을 쓰면 팝업이 뜨고, `data-netlify-identity-menu`를 쓰면 고정 메뉴가 떠 -->
+    <!-- 지금은 메뉴 형태로 고정해서 위젯이 로드되는지 확인하자 -->
+    <div data-netlify-identity-menu></div>
   </div>
 </template>
 
 <script setup>
 import { onMounted } from 'vue';
 
-const openNetlifyIdentityLogin = () => {
-  if (window.netlifyIdentity) {
-    console.log('Opening Netlify Identity widget via login button click...');
-    window.netlifyIdentity.open(); // 일반 로그인/사용자 패널을 띄움
-  } else {
-    console.error('Netlify Identity widget not loaded on login button click.');
-    alert('Netlify Identity 위젯이 로드되지 않았습니다.');
-  }
-};
-
-// ✨ 새로 추가하는 함수: 비밀번호 설정 모드로 위젯 열기! ✨
-const forceOpenPasswordSet = () => {
-  if (window.netlifyIdentity) {
-    console.log('Forcing Netlify Identity widget to password reset mode...');
-    // `page: 'password'` 인자를 넘겨서 비밀번호 설정 화면을 강제로 띄운다
-    window.netlifyIdentity.open({ page: 'password' }); 
-  } else {
-    console.error('Netlify Identity widget not loaded on force password set button click.');
-    alert('Netlify Identity 위젯이 로드되지 않았습니다.');
-  }
-};
-
-
-// 페이지 로드 시 초기화는 해두는 것이 좋으므로 App.vue의 로직 일부를 가져옴
 onMounted(() => {
   if (window.netlifyIdentity) {
-    window.netlifyIdentity.init(); 
+    window.netlifyIdentity.init(); // 위젯 초기화는 필수
+
+    // 위젯이 열리는 타이밍을 강제하지 않고, data-netlify-identity-menu에 위젯이 그려지길 기대
     window.netlifyIdentity.on("init", user => {
       console.log("AdminPage Netlify Identity initialized:", user);
     });
+
+    window.netlifyIdentity.on("open", () => console.log("Netlify Identity widget opened"));
+    window.netlifyIdentity.on("close", () => console.log("Netlify Identity widget closed"));
+    window.netlifyIdentity.on("login", user => console.log("Logged in:", user));
+    window.netlifyIdentity.on("logout", () => console.log("Logged out"));
+
+  } else {
+    console.error('Netlify Identity widget script not found in window on AdminPage.');
+    alert('Netlify Identity 위젯 스크립트가 로드되지 않았습니다.');
   }
 });
 </script>
@@ -76,28 +58,7 @@ onMounted(() => {
   font-size: 1.1em;
 }
 
-.netlify-login-btn {
-  margin-top: 30px;
-  padding: 10px 20px;
-  font-size: 1em;
-  color: white;
-  background-color: #007bff;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  margin: 10px; /* 버튼 사이 간격 */
-
-  &:hover {
-    background-color: #0056b3;
-  }
-}
-
-/* 새로 추가된 버튼 스타일 (구분용) */
-.force-password-btn {
-  background-color: #28a745; /* 녹색 */
-  &:hover {
-    background-color: #218838;
-  }
-}
+/* 기존 버튼 관련 스타일은 이제 필요 없어 */
+/* .netlify-login-btn { ... } */
+/* .force-password-btn { ... } */
 </style>
