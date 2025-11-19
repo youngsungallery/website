@@ -23,19 +23,19 @@ const router = createRouter({
   routes
 });
 
-// 전역 네비게이션 가드 추가 (이 로직은 그대로 유지)
+// 전역 네비게이션 가드 추가
 router.beforeEach((to, from, next) => {
-  if (to.meta.requiresAuth) {
-    if (auth.isAuthenticated()) {
+  if (to.meta.requiresAuth) { // ✨ 라우트 메타 필드에 requiresAuth: true 로 되어 있으면 보호 로직 실행! ✨
+    if (auth.isAuthenticated()) { // ✨ 인증 토큰이 localStorage에 있는지 확인! ✨
       try {
         const decodedToken = JSON.parse(atob(auth.token.value.split('.')[1]));
-        if (decodedToken.role === 'admin') {
-          next();
+        if (decodedToken.role === 'admin') { // ✨ 토큰 안의 역할이 'admin'인지 확인! ✨
+          next(); // 관리자 토큰이면 계속 진행
         } else {
           console.log('Access Denied: Not an admin role.');
           alert('관리자 권한이 없습니다.');
-          auth.logout();
-          next('/');
+          auth.logout(); 
+          next('/'); // 관리자가 아니면 메인 페이지로 리디렉션
         }
       } catch (error) {
         console.error('Error decoding auth token:', error);
@@ -43,13 +43,13 @@ router.beforeEach((to, from, next) => {
         auth.logout();
         next('/');
       }
-    } else {
+    } else { // ✨ 토큰이 없으면 ✨
       console.log('Access Denied: No authentication token found.');
       alert('로그인이 필요합니다.');
-      next('/');
+      next('/'); // 로그인 페이지 또는 메인 페이지로 리디렉션
     }
   } else {
-    next();
+    next(); // 인증이 필요 없는 라우트는 그냥 진행
   }
 });
 
