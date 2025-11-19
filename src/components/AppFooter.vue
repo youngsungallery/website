@@ -46,29 +46,37 @@
              style="vertical-align: middle; width: 1.1em; height: 1.1em; margin-right: 0.3em; margin-left: 0.3em; filter: invert(0) sepia(1) saturate(5) hue-rotate(90deg) brightness(1.5);">
         Vue.js으로 제작하였습니다.
       </p> 
-      <!-- ✨ 노션 연동 테스트 문구 표시 ✨ -->
-      <p class="notion-test-info">{{ notionTestMessage }}</p>
+      <!-- ✨ 노션 연동 테스트 문구 표시 - v-html 사용 ✨ -->
+      <p class="notion-test-info" v-html="formattedNotionTestMessage"></p>
     </div>
   </footer>
 </template>
 
 <script setup>
 import BaseIcon from '@/components/BaseIcon.vue';
-import { ref, onMounted } from 'vue'; // ✨ ref와 onMounted 임포트 ✨
+import { ref, onMounted, computed } from 'vue'; // ✨ computed 임포트 ✨
 
-// ✨ Notion 테스트 메시지를 저장할 ref 생성 ✨
+// Notion 테스트 메시지를 저장할 ref 생성
 const notionTestMessage = ref('노션 연동 테스트 (로딩 중...)');
 
-// ✨ 컴포넌트가 마운트될 때 JSON 파일 읽어오기 ✨
+// ✨ \n 줄바꿈 문자를 <br> 태그로 변경하는 computed 속성 ✨
+const formattedNotionTestMessage = computed(() => {
+  // \n 문자를 <br> 태그로 바꾸고 v-html에 넘겨줌
+  return notionTestMessage.value.replace(/\n/g, '<br>');
+});
+
+// 컴포넌트가 마운트될 때 JSON 파일 읽어오기
 onMounted(async () => {
   try {
-    // Actions가 생성할 public/data/footer-test-data.json 파일을 읽어옴
     const response = await fetch('/data/footer-test-data.json');
+    if (!response.ok) { // HTTP 에러 처리
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     const data = await response.json();
     notionTestMessage.value = data.notionTestMessage;
   } catch (error) {
     console.error('Failed to load Notion test data:', error);
-    notionTestMessage.value = '노션 연동 테스트 (데이터 로드 실패)';
+    notionTestMessage.value = `노션 연동 테스트 (데이터 로드 실패: ${error.message})`;
   }
 });
 </script>
