@@ -6,8 +6,13 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main # main 브랜치에 푸시될 때 워크플로우가 자동으로 실행되게 함
-      # - dev # 개발 브랜치가 있다면 추가
+      - main
+  # ✨ 이 부분을 추가해 줘! (한국 시간 오후 9시 40분에 실행) ✨
+  schedule:
+    - cron: '40 12 * * *' # UTC 12:40 (KST 21:40)에 실행
+      # cron 표현식 설명:
+      # (분 시 일 월 요일)
+      # 40분 12시 (UTC) -> 한국 시간 (KST)으로 12시 + 9시간 = 21시 (오후 9시) 40분
 
 jobs:
   fetch-notion-content:
@@ -64,11 +69,10 @@ jobs:
 
           TIMESTAMP=$(TZ='Asia/Seoul' date "+%Y.%m.%d %H:%M:%S")
           
-          # ✨ 이 한 줄만 교체해 줘! 타임스탬프 앞에 \n 추가 ✨
           JSON_CONTENT=$(jq -n \
             --arg text "${NOTION_TEXT_RAW}" \
             --arg timestamp "${TIMESTAMP}" \
-            '{notionTestMessage: ($text + "\n(깃허브 커밋 " + $timestamp + ")")}' # <- 여기에 \n 추가!
+            '{notionTestMessage: ($text + "\n(깃허브 커밋 " + $timestamp + ")")}'
           )
           
           echo "Generated JSON: $JSON_CONTENT"
