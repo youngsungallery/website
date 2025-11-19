@@ -8,8 +8,8 @@
         로그아웃
       </button>
     </div>
+    <!-- ✨ 이 div 태그에서 `data-client_id` 속성을 제거했어! ✨ -->
     <div v-else id="g_id_onload"
-      :data-client_id="googleClientId"  <!-- ✨ 이 부분이 수정되었어! ✨ -->
       data-context="signin"
       data-ux_mode="popup"
       data-callback="handleCredentialResponse"
@@ -56,12 +56,9 @@ window.handleCredentialResponse = (response) => {
 // 로그아웃 함수
 const handleSignOut = () => {
   if (window.google && window.google.accounts && window.google.accounts.id) {
-    // google.accounts.id.disableAutoSelect(); // 필요시 자동 로그인 방지
-    // google.accounts.id.revoke는 사용자의 동의를 철회하므로, 신중하게 사용 (모든 Google 서비스에서 연결 해제)
-    // 그냥 클라이언트에서 세션 지우는게 일반적
-    // window.google.accounts.id.revoke(userEmail.value, (done) => {
-    //   console.log('Revocation successful:', done);
-    // });
+    // 로그아웃 시 클라이언트 측에서만 사용자 상태를 지우는 방식으로 구현
+    // 구글 서비스 자체에서 연결을 해제하려면 google.accounts.id.revoke를 사용해야 함
+    // (보통 사용자가 원할 때만 호출)
     userEmail.value = null; // UI에서 이메일 제거
     alert("로그아웃되었습니다.");
   }
@@ -71,7 +68,7 @@ onMounted(() => {
   // `google.accounts.id.initialize` 함수를 사용하여 Google Sign-In 초기화
   if (window.google && window.google.accounts && window.google.accounts.id) {
     window.google.accounts.id.initialize({
-      client_id: googleClientId, // Netlify 환경 변수에서 가져온 클라이언트 ID
+      client_id: googleClientId, // JavaScript에서 클라이언트 ID 설정
       callback: handleCredentialResponse // 로그인 성공 시 호출될 콜백 함수
     });
     
