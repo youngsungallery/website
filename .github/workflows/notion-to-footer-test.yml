@@ -9,7 +9,7 @@ on:
       - main
   # ✨ 이 부분을 교체해 줘! (한국 시간 오후 10시 07분에 실행) ✨
   schedule:
-    - cron: '07 13 * * *' # UTC 13:07 (KST 22:07, 오후 10시 07분)에 실행
+    - cron: '10 13 * * *' # UTC 13:07 (KST 22:07, 오후 10시 10분)에 실행
 
 jobs:
   fetch-notion-content:
