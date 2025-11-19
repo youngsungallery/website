@@ -8,52 +8,42 @@
   color: #777;
   text-align: center;
   margin-top: 100px;
-  box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
-  width: 100%; /* ✨ 부모 너비를 꽉 채우도록 ✨ */
-  max-width: 100vw; /* ✨ 뷰포트 너비를 넘지 않도록 강제 ✨ */
-  overflow-x: hidden; /* ✨ 푸터 내부에서 넘치는 내용 숨김 ✨ */
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 
   .footer-bottom {
-    max-width: 900px; /* ✨ 푸터 내용 컨테이너의 최대 너비 ✨ */
-    width: 100%; /* ✨ 부모의 100%를 차지하게 ✨ */
+    max-width: 900px;
+    width: 100%;
     margin: 0 auto;
-    background-color: #3f3f3f;
     color: #cecece;
-    padding: 30px 20px; /* ✨ 양쪽 20px 패딩으로 변경 ✨ */
+    padding: 30px 20px;
     position: relative;
-    box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+    box-sizing: border-box;
 
-    &::before, &::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      width: 100%;
-      height: 1px;
-      background-color: #555;
-    }
-    &::before {
-      top: 0;
-    }
-    &::after {
-      bottom: 0;
-    }
+    // `footer-bottom` 자체의 `::before`와 `::after` 가상 요소는 모두 제거됨 (수동으로 라인 추가)
 
     .footer-top-line {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 25px;
-      width: 100%; /* ✨ 부모의 100%를 차지하게 ✨ */
-      box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+      width: 100%;
+      box-sizing: border-box;
+      background-color: #3f3f3f;
+      padding: 15px 20px;
+      border-radius: 8px;
 
       h3 {
-        font-size: 1.1em;
+        font-size: 1.5em; /* 영선갤러리 폰트 사이즈 키움 */
         color: #e0e0e0;
         font-weight: bold;
         margin: 0;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         white-space: nowrap;
+        flex-shrink: 0;
       }
 
       p.copyright {
@@ -61,48 +51,136 @@
         font-size: 0.8em;
         color: #b0b0b0;
         white-space: nowrap;
+        text-align: right;
       }
     }
 
-    p {
+    p { // `.tech-info`가 아닌 일반 `p` 태그 스타일 (`.tech-info`는 아래에 명시)
       margin-bottom: 5px;
       font-size: 0.8em;
-      color: #b0b0b0;
+      color: #777; // 배경색 #fcfcfc 위에 가시성 확보를 위해 어두운 색상으로 변경
       line-height: 1.5;
 
-      &.tech-info {
+      &.tech-info { // `tech-info` 섹션 (본 사이트는 Vue.js로 제작 문구)
         margin-top: 25px;
+        text-align: right;
+        padding-right: 20px;
+        padding-left: 20px;
+        // border-top: 1px solid #555; /* 소셜 아래, 본사이트 문구 위에 라인이 있었으나 제거됨 */
+        padding-top: 25px; /* 라인과 콘텐츠 사이 여백 */
+      }
+
+      &.notion-test-info { // 노션 연동 테스트 정보 스타일
+        margin-top: 15px; /* tech-info와의 간격 */
+        font-size: 0.7em; /* 눈에 띄지 않게 조금 작게 */
+        color: #a0a0a0; /* 회색으로 부드럽게 */
+        text-align: right;
+        padding-right: 20px;
+        padding-left: 20px;
+      }
+    }
+
+
+    .gallery-address-section {
+      margin-top: 25px;
+      width: 100%;
+      box-sizing: border-box;
+      text-align: left;
+      padding-left: 20px;
+      padding-right: 20px;
+      // border-bottom: 1px solid #555; /* 주소와 소셜 사이에 라인이 있었으나 제거됨 */
+      padding-bottom: 25px; /* 라인과 콘텐츠 사이 여백 */
+
+
+      .address-text {
+        margin: 0;
+        font-size: 0.95em; /* 주소 글자 크기 조정 */
+        color: #777;
+        line-height: 1.5;
+      }
+
+      .map-link {
+        color: #42b983;
+        text-decoration: none;
+        margin-left: 8px;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: color 0.3s ease;
+
+        &:hover {
+          color: #2a7e58;
+        }
+      }
+
+      .tel-number { // 전화번호 텍스트 및 아이콘 섹션
+        margin-top: 8px; /* 주소 텍스트와 간격 */
+        font-size: 0.95em; /* 전화번호 글자 크기 조정 */
+        color: #777;
+        display: flex; /* 아이콘과 텍스트 정렬 */
+        align-items: center;
+        justify-content: flex-start; /* 왼쪽 정렬 */
+
+        .tel-link {
+          margin-left: 5px; /* 전화번호 텍스트와 아이콘 간격 */
+          display: flex;
+          align-items: center;
+          color: #42b983; /* 아이콘 색상 */
+          text-decoration: none;
+
+          /* .phone-icon은 BaseIcon 컴포넌트 내부에서 처리되므로 여기서는 특별한 스타일 불필요 */
+        }
       }
     }
 
     .social-section {
-      margin-top: 20px;
+      margin-top: 25px;
       margin-bottom: 25px;
-      width: 100%; /* ✨ 부모의 100%를 차지하게 ✨ */
-      box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+      width: 100%;
+      box-sizing: border-box;
+      
+      background-color: #ededed; /* 소셜 섹션 배경색 (은은한 회색) */
+      padding: 15px 20px; /* 상하좌우 패딩 */
+      border-radius: 8px; /* 모서리 둥글게 */
+
+      text-align: left;
 
       .social-heading {
         font-weight: bold;
-        color: #e0e0e0;
+        color: #333;
         margin-bottom: 10px;
         text-transform: uppercase;
         letter-spacing: 0.1em;
-        font-size: 0.85em;
+        font-size: 1.1em; /* 소셜 제목 글자 크기 키움 */
       }
 
       .social-link-item {
         margin-bottom: 8px;
-        font-size: 0.8em;
-        width: 100%; /* ✨ 부모의 100%를 차지하게 ✨ */
-        box-sizing: border-box; /* ✨ 패딩이 너비를 벗어나지 않도록 ✨ */
+        font-size: 0.95em; /* 소셜 링크 글자 크기 키움 */
+        width: 100%;
+        box-sizing: border-box;
 
         a {
-          color: #a0a0a0;
+          color: #777;
           text-decoration: none;
           transition: color 0.3s ease;
+          display: flex;
+          align-items: center;
+
+          .social-icon { /* BaseIcon 컴포넌트 내부의 아이콘 */
+            margin-right: 8px; /* 아이콘과 텍스트 사이 간격 */
+            flex-shrink: 0; 
+            /* `BaseIcon.vue` 내부에서 브랜드 색상 `fill`이 직접 지정되었으므로 
+               여기서 `fill`을 오버라이드할 필요는 없습니다. */
+          }
+
+          span { // 소셜 링크 텍스트
+            line-height: 1.2;
+          }
 
           &:hover {
-            color: #d0d0d0;
+            color: #333; /* 텍스트만 호버 시 색상 변경 */
+            /* 아이콘은 `BaseIcon.vue` 내부의 `fill` 속성에 의해 브랜드 색상이 결정되므로
+               호버 시 아이콘 색상 변경은 이곳에서 하지 않습니다. */
           }
         }
       }

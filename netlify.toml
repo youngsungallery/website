@@ -4,3 +4,10 @@
 
 [functions]
   directory = "netlify/functions" # Netlify Functions 코드가 있는 디렉토리
+
+[dev]                     # ✨ 이 섹션을 추가! ✨
+  framework = "#auto"     # Netlify CLI가 자동으로 프레임워크 감지
+  command = "vite --port 5173" # Vite 개발 서버를 실행하는 명령어
+  targetPort = 5173       # ✨ Vite 개발 서버가 실제로 실행되는 포트를 명시! ✨
+  publish = "dist"        # (선택 사항) 로컬 개발 시 정적 파일 위치. 없어도 무방
+  port = 8888             # Netlify dev 서버가 전체를 서빙할 포트 (기본값)

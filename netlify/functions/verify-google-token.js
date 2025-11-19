@@ -1,19 +1,18 @@
+// require('dotenv').config(); // ✨ 이 줄은 Netlify CLI가 알아서 처리하므로 삭제했는지 다시 한번 확인! ✨
 const { OAuth2Client } = require('google-auth-library'); // Google OAuth 라이브러리
 const jwt = require('jsonwebtoken'); // JSON Web Token 라이브러리
 
 // Netlify 환경 변수에서 가져온 Google 클라이언트 ID 및 보안 비밀번호
-const GOOGLE_CLIENT_ID = process.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;       // ✨ 수정! VITE_ 접두사 제거! ✨
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
 // 우리가 사용할 JWT 토큰을 서명하고 검증할 비밀 키 (매우 중요!)
-// Netlify 환경 변수에 저장하는 것이 가장 안전함.
-// 여기서는 임시로 하드코딩 (나중에 실제 프로젝트에서는 반드시 환경 변수로 대체)
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key_please_change_this_in_production'; 
+const JWT_SECRET = process.env.JWT_SECRET; // ✨ 수정! 불필요한 기본값 제거! ✨
 
 // 관리자로 인정할 이메일 목록
 // 이메일은 실제 관리자의 Gmail 주소로 대체해야 합니다.
 const ADMIN_EMAILS = [
-  'evepoi86@gmail.com', // ✨ 정민이의 관리자 이메일로 반드시 바꿔줘! ✨
+  'evepoi86@gmail.com', // ✨ 정민이의 관리자 이메일로 다시 한번 확인! ✨
   'another.admin@example.com' // 추가 관리자가 있다면 여기에 추가
 ];
 
