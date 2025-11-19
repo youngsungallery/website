@@ -15,7 +15,7 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, watch } from 'vue'; // ✨ watch 임포트 ✨
+import { onMounted, onBeforeUnmount, watch } from 'vue';
 import auth from '@/stores/auth';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -72,7 +72,7 @@ const renderGoogleSignInButton = () => {
     // 버튼을 다시 렌더링 요청
     window.google.accounts.id.renderButton(
       document.getElementById("google-signin-button"), 
-      { theme: "outline", size: "large", text: "signin_with", shape: "rectangular" }
+      { theme: "outline", size: "large", text: "signin", shape: "rectangular" } // ✨ "signin_with" -> "signin"으로 변경! ✨
     );
   } else {
     console.error("Google Identity Services script not ready or client ID is invalid.");
@@ -84,8 +84,6 @@ const renderGoogleSignInButton = () => {
 const handleSignOut = () => {
   auth.logout(); 
   alert("로그아웃되었습니다.");
-  // ✨ 로그아웃 후 로그인 버튼을 다시 렌더링 요청 ✨
-  // setTimeout을 사용하여 DOM 업데이트 후 버튼이 그려지도록 약간의 지연을 줍니다.
   setTimeout(() => {
     renderGoogleSignInButton();
   }, 100); 
@@ -93,22 +91,18 @@ const handleSignOut = () => {
 
 // auth.isAuthenticated() 값의 변경을 감시
 watch(() => auth.isAuthenticated(), (newValue, oldValue) => {
-  if (oldValue && !newValue) { // 인증 상태가 true에서 false로 변경될 때 (로그아웃 될 때)
+  if (oldValue && !newValue) { 
     console.log('User logged out. Attempting to re-render Google Sign-In button.');
-    // handleSignOut에서 이미 호출하고 있으므로 여기서는 제거
-  } else if (!oldValue && newValue) { // 인증 상태가 false에서 true로 변경될 때 (로그인 될 때)
+  } else if (!oldValue && newValue) { 
     console.log('User logged in. Google Sign-In button should be hidden.');
-    // 로그인 버튼 숨기기는 v-if가 처리함.
   }
 });
 
 
 onMounted(() => {
-  // 초기 로드 시 로그인 상태가 아니면 버튼 렌더링
   if (!auth.isAuthenticated()) {
     renderGoogleSignInButton();
   } else {
-    // 이미 로그인된 상태일 경우 (페이지 새로고침 시 localStorage에서 토큰 불러옴)
     console.log('User already authenticated. Showing logout button.');
   }
 });
@@ -148,7 +142,7 @@ onBeforeUnmount(() => {
   padding: 10px 20px;
   font-size: 1em;
   color: white;
-  background-color: #dc3545; /* 빨간색 */
+  background-color: #dc3545; 
   border: none;
   border-radius: 5px;
   cursor: pointer;
