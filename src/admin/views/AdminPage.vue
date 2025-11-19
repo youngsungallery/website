@@ -15,8 +15,8 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount } from 'vue';
-import auth from '@/stores/auth'; // ✨ Auth Store 임포트 ✨
+import { onMounted, onBeforeUnmount, watch } from 'vue'; // ✨ watch 임포트 ✨
+import auth from '@/stores/auth';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -44,30 +44,23 @@ window.handleCredentialResponse = async (response) => {
     const data = await res.json();
 
     if (res.ok && data.token) {
-      // ✨ authStore를 통해 로그인 상태 저장 ✨
       auth.login({ email: data.email }, data.token); 
       console.log("Login successful from Netlify Function:", data.email);
       alert(`로그인 성공! ${data.email} (Netlify Function 검증 완료)`);
     } else {
       console.error("Netlify Function login failed:", data.body);
       alert(`로그인 실패: ${data.body || '서버 오류'}`);
-      auth.logout(); // 로그인 실패 시 상태 초기화
+      auth.logout();
     }
   } catch (error) {
     console.error("Error calling Netlify Function:", error);
     alert("로그인 중 오류 발생 (Netlify Function 통신 오류)");
-    auth.logout(); // 에러 발생 시 상태 초기화
+    auth.logout();
   }
 };
 
-// 로그아웃 함수
-const handleSignOut = () => {
-  auth.logout(); // ✨ authStore를 통해 로그아웃 처리 ✨
-  alert("로그아웃되었습니다.");
-};
-
-onMounted(() => {
-  // `Google Identity Services` 초기화
+// 로그인 버튼 렌더링 함수 (재사용을 위해 분리)
+const renderGoogleSignInButton = () => {
   if (window.google && window.google.accounts && window.google.accounts.id && googleClientId) {
     window.google.accounts.id.initialize({
       client_id: googleClientId,
@@ -76,15 +69,47 @@ onMounted(() => {
       cancel_on_tap_outside: true,
     });
     
-    // 버튼 렌더링은 `auth.isAuthenticated()`가 false일 때만 (로그인되어 있지 않을 때만)
-    // 컴포넌트 템플릿의 v-if 조건에 의해 자동으로 처리되므로, 
-    // 여기서는 명시적으로 조건문을 넣을 필요는 없음
+    // 버튼을 다시 렌더링 요청
     window.google.accounts.id.renderButton(
       document.getElementById("google-signin-button"), 
       { theme: "outline", size: "large", text: "signin_with", shape: "rectangular" }
     );
   } else {
     console.error("Google Identity Services script not ready or client ID is invalid.");
+  }
+};
+
+
+// 로그아웃 함수
+const handleSignOut = () => {
+  auth.logout(); 
+  alert("로그아웃되었습니다.");
+  // ✨ 로그아웃 후 로그인 버튼을 다시 렌더링 요청 ✨
+  // setTimeout을 사용하여 DOM 업데이트 후 버튼이 그려지도록 약간의 지연을 줍니다.
+  setTimeout(() => {
+    renderGoogleSignInButton();
+  }, 100); 
+};
+
+// auth.isAuthenticated() 값의 변경을 감시
+watch(() => auth.isAuthenticated(), (newValue, oldValue) => {
+  if (oldValue && !newValue) { // 인증 상태가 true에서 false로 변경될 때 (로그아웃 될 때)
+    console.log('User logged out. Attempting to re-render Google Sign-In button.');
+    // handleSignOut에서 이미 호출하고 있으므로 여기서는 제거
+  } else if (!oldValue && newValue) { // 인증 상태가 false에서 true로 변경될 때 (로그인 될 때)
+    console.log('User logged in. Google Sign-In button should be hidden.');
+    // 로그인 버튼 숨기기는 v-if가 처리함.
+  }
+});
+
+
+onMounted(() => {
+  // 초기 로드 시 로그인 상태가 아니면 버튼 렌더링
+  if (!auth.isAuthenticated()) {
+    renderGoogleSignInButton();
+  } else {
+    // 이미 로그인된 상태일 경우 (페이지 새로고침 시 localStorage에서 토큰 불러옴)
+    console.log('User already authenticated. Showing logout button.');
   }
 });
 
@@ -96,7 +121,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
-/* (생략 - 스타일은 이전과 동일) */
+/* 관리 페이지 전용 스타일 */
 .admin-page {
   padding-top: 100px; 
   text-align: center;
@@ -123,7 +148,7 @@ onBeforeUnmount(() => {
   padding: 10px 20px;
   font-size: 1em;
   color: white;
-  background-color: #dc3545; 
+  background-color: #dc3545; /* 빨간색 */
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -134,6 +159,7 @@ onBeforeUnmount(() => {
   }
 }
 
+/* Google Sign-In 버튼을 감싸는 div */
 #google-signin-button {
   margin-top: 20px;
 }
