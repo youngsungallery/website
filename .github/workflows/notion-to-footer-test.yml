@@ -1,12 +1,11 @@
 # .github/workflows/notion-to-footer-test.yml
-
 name: Fetch Notion Footer Test Content
 
 on:
-  workflow_dispatch: # GitHub Actions UI에서 수동으로 워크플로우를 실행할 수 있게 함
+  workflow_dispatch:
   push:
     branches:
-      - main # main 브랜치에 푸시될 때 워크플로우가 자동으로 실행되게 함
+      - main
       # - dev # 개발 브랜치가 있다면 추가
 
 jobs:
@@ -19,10 +18,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20' # 네 프로젝트의 Node.js 버전에 맞춰서 설정 (core_memory상 20이었어)
+          node-version: '20'
 
       - name: Install dependencies (optional, but good practice for scripting)
-        run: npm install # 필요한 경우 여기에 추가 npm 패키지 설치
+        run: npm install
 
       - name: Fetch Notion Page Content and Update Footer
         env: # GitHub Secrets에 등록한 변수들을 환경 변수로 불러옴
@@ -30,11 +29,19 @@ jobs:
           NOTION_TEST_PAGE_ID: ${{ secrets.NOTION_TEST_PAGE_ID }}
         run: |
           echo "Fetching Notion page: $NOTION_TEST_PAGE_ID"
-          # Notion API 호출하여 페이지 블록 내용 가져오기
+          # Notion API 호출하여 페이지 블록 내용 가져오기 - ✨ 이 부분 수정! ✨
           PAGE_CONTENT=$(curl -X GET "https://api.notion.com/v1/blocks/$NOTION_TEST_PAGE_ID/children?page_size=100" \
             -H "Authorization: Bearer $NOTION_TOKEN" \
             -H "Notion-Version: 2022-06-28" \
-            | jq -r '[.results[] | select(.type == "paragraph") | .paragraph.rich_text[] | .plain_text] | join("")'
+            | jq -r '
+              [
+                .results[]
+                | select(.type == "paragraph")
+                | .paragraph.rich_text[]
+                | .plain_text
+              ]
+              | join("\n") # ✨ 각 문단을 줄바꿈 문자로 연결! ✨
+            '
           )
           
           # 가져온 내용과 현재 시각을 포함한 JSON 파일 생성
@@ -44,7 +51,7 @@ jobs:
           echo "Generated JSON: $JSON_CONTENT"
           
           # public/data/footer-test-data.json 파일 생성 (없으면 생성, 있으면 덮어쓰기)
-          mkdir -p public/data # public/data 폴더가 없으면 생성
+          mkdir -p public/data
           echo "$JSON_CONTENT" > public/data/footer-test-data.json
           
           # 변경된 파일을 Git에 커밋하고 푸시
