@@ -1,0 +1,26 @@
+# .github/workflows/trigger-netlify-weekly-build.yml
+name: Trigger Netlify Main Branch Weekly Build
+
+on:
+  schedule:
+    # 매주 일요일 자정 (KST)에 실행 (UTC 15시 00분)
+    # cron 표현식: (분 시 일 월 요일)
+    # '0 15 * * 0' -> 0분, 15시 (UTC) = KST 자정 (00시) 0분. 0은 일요일을 의미.
+    - cron: '0 15 * * 0' 
+
+jobs:
+  trigger_netlify_build:
+    runs-on: ubuntu-latest
+    steps:
+      # (선택 사항: Checkout repository 스텝은 Build Hook만 호출할 거면 필수는 아님.
+      # 하지만 워크플로우가 Git 저장소와 상호작용하는 느낌을 주므로 남겨두는 경우도 있음)
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Send POST request to Netlify Build Hook
+        env:
+          NETLIFY_BUILD_HOOK_URL: ${{ secrets.NETLIFY_BUILD_HOOK_MAIN }} # 위에서 Secrets에 등록한 이름
+        run: |
+          echo "Triggering Netlify build for main branch..."
+          curl -X POST -d {} "$NETLIFY_BUILD_HOOK_URL"
+          echo "Netlify build hook sent."
