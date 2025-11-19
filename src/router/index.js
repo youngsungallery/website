@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
-// 메인 웹사이트는 HomeView.vue 하나만 라우터에 연결!
-import HomeView from '@/components/HomeView.vue'; // HomeView.vue는 src/components/ 에 있다고 가정
+// ✨ HomeView.vue는 views 폴더에 있다고 명시적으로 임포트! ✨
+import HomeView from '@/views/HomeView.vue'; 
 import auth from '@/stores/auth'; // Auth Store 임포트 (경로 유지)
 
 const routes = [
@@ -12,7 +12,7 @@ const routes = [
   {
     path: '/admin',
     name: 'admin',
-    // 관리자 페이지는 @/admin/views/AdminPage.vue 에 있다고 가정
+    // 관리자 페이지는 @/admin/views/ 에 있다고 확인했으므로 이 경로는 그대로 유지!
     component: () => import('@/admin/views/AdminPage.vue'), 
     meta: { requiresAuth: true }
   }
