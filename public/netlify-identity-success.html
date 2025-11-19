@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Identity Callback</title>
+  <script type="text/javascript" src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+</head>
+<body>
+  <script>
+    // Netlify Identity 위젯이 로드되면 실행되는 스크립트
+    if (window.netlifyIdentity) {
+      window.netlifyIdentity.on("init", function(user) {
+        // 초대 토큰을 처리하는 함수 (자동으로 비밀번호 설정 페이지로 리디렉션되거나 로그인됨)
+        // 토큰 처리 후 /admin 페이지로 이동
+        if (window.netlifyIdentity.oauthHandled) { // Netlify OAuth 처리 후
+            window.location.href = '/admin';
+        } else if (user) { // 이미 로그인된 사용자라면
+            window.location.href = '/admin';
+        } else if (document.location.hash.includes('invite_token=') || document.location.hash.includes('recovery_token=')) {
+            // 초대 토큰이나 복구 토큰이 있으면, 위젯이 이를 감지하고 비밀번호 설정/복구 UI를 띄워야 함
+            // 위젯이 알아서 처리할 것이므로 별도 open()은 하지 않음
+        } else { // 그 외의 경우 (예: 그냥 이 페이지에 접속한 경우)
+            window.location.href = '/admin'; // 기본적으로 /admin 페이지로 보내버림
+        }
+      });
+      
+      // 위젯이 로드되고 토큰이 처리된 후에 사용자 리디렉션을 기다림
+      // 위젯 스크립트 자체에서 토큰 처리 후 리디렉션을 담당함.
+    } else {
+        console.error('Netlify Identity widget not loaded on callback page.');
+        window.location.href = '/admin'; // 위젯 로드 실패 시에도 /admin 페이지로 이동
+    }
+  </script>
+  <p>Loading Netlify Identity...</p>
+  <style>
+    /* 로딩 중 페이지 스타일 */
+    body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+  </style>
+</body>
+</html>
