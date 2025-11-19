@@ -22,31 +22,55 @@ jobs:
           node-version: '20'
 
       - name: Fetch Notion Page Content and Update Footer
-        env: # GitHub Secrets에 등록한 변수들을 환경 변수로 불러옴
+        env:
           NOTION_TOKEN: ${{ secrets.NOTION_INTEGRATION_TOKEN }}
           NOTION_TEST_PAGE_ID: ${{ secrets.NOTION_TEST_PAGE_ID }}
         run: |
-          echo "Fetching Notion page: $NOTION_TEST_PAGE_ID"
-          
-          # Notion API 호출하여 페이지 블록 내용 가져오기 (여러 줄 지원)
-          # jq를 사용하여 여러 문단을 '\n'으로 연결
-          NOTION_TEXT_RAW=$(curl -s -X GET "https://api.notion.com/v1/blocks/$NOTION_TEST_PAGE_ID/children?page_size=100" \
+          echo "Debugging Notion API fetch process:"
+          echo "NOTION_TEST_PAGE_ID: ${NOTION_TEST_PAGE_ID}" # 실제 ID가 출력되지는 않음 (보안상)
+
+          # ✨ Notion API 호출 및 결과 디버깅 강화 ✨
+          NOTION_API_RESPONSE=$(curl -s -X GET "https://api.notion.com/v1/blocks/$NOTION_TEST_PAGE_ID/children?page_size=100" \
             -H "Authorization: Bearer $NOTION_TOKEN" \
-            -H "Notion-Version: 2022-06-28" \
-            | jq -r '
-              [
-                .results[]
-                | select(.type == "paragraph" and .paragraph.rich_text | length > 0) # 내용 있는 paragraph만
-                | .paragraph.rich_text[]
-                | .plain_text
-              ]
-              | join("\n")
-            ')
+            -H "Notion-Version: 2022-06-28")
           
+          echo "--- Notion API Raw Response (first 500 chars) ---"
+          echo "${NOTION_API_RESPONSE}" | head -c 500
+          echo "" # 줄바꿈
+
+          # ✨ 응답이 비어있는지 확인 ✨
+          if [ -z "${NOTION_API_RESPONSE}" ]; then
+            echo "Error: Notion API response is empty. Check NOTION_TEST_PAGE_ID and NOTION_TOKEN permissions."
+            exit 1 # 스크립트 실패 처리
+          fi
+
+          # ✨ jq 처리 부분 ✨
+          # jq를 사용하여 여러 문단을 '\n'으로 연결
+          NOTION_TEXT_RAW=$(echo "${NOTION_API_RESPONSE}" | jq -r '
+            [
+              .results[]
+              | select(.type == "paragraph" and (.paragraph.rich_text | length > 0)) # `.paragraph.rich_text`가 배열이고 길이가 0보다 큰 경우만 선택
+              | .paragraph.rich_text[]
+              | .plain_text
+            ]
+            | join("\n")
+          ')
+          
+          # ✨ jq 처리 후 결과 확인 ✨
+          JQ_EXIT_CODE=$? # jq 명령어의 종료 코드 저장
+          if [ $JQ_EXIT_CODE -ne 0 ]; then
+            echo "Error: jq command failed with exit code $JQ_EXIT_CODE. Raw Notion API response might not be valid JSON or not match jq filter."
+            exit 1 # 스크립트 실패 처리
+          fi
+          
+          echo "--- Processed Notion Text ---"
+          echo "${NOTION_TEXT_RAW}"
+          echo "-----------------------------"
+
           # 현재 시각 생성
           TIMESTAMP=$(TZ='Asia/Seoul' date "+%Y.%m.%d %H:%M:%S") # 타임존 한국 시간으로 설정
           
-          # jq를 사용하여 JSON 데이터를 안전하게 생성 (Shell 변수 내용을 자동으로 이스케이프)
+          # jq를 사용하여 JSON 데이터를 안전하게 생성
           JSON_CONTENT=$(jq -n \
             --arg text "${NOTION_TEXT_RAW}" \
             --arg timestamp "${TIMESTAMP}" \
@@ -55,8 +79,8 @@ jobs:
           
           echo "Generated JSON: $JSON_CONTENT"
           
-          # public/data/footer-test-data.json 파일 생성 (없으면 생성, 있으면 덮어쓰기)
-          mkdir -p public/data || true # mkdir -p는 이미 존재해도 오류 안 나게
+          # public/data/footer-test-data.json 파일 생성
+          mkdir -p public/data || true
           echo "$JSON_CONTENT" > public/data/footer-test-data.json
           
           # 변경된 파일을 Git에 커밋하고 푸시
