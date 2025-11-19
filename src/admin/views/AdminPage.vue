@@ -9,13 +9,16 @@
       </button>
     </div>
     <div v-else>
-      <div id="google-signin-button"></div>
+      <!-- ✨ 우리가 직접 만든 로그인 버튼 ✨ -->
+      <button @click="triggerGoogleLogin" class="custom-google-login-btn">
+        로그인
+      </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, watch } from 'vue';
+import { onMounted, onBeforeUnmount } from 'vue'; // watch는 더 이상 필요 없음
 import auth from '@/stores/auth';
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -59,23 +62,24 @@ window.handleCredentialResponse = async (response) => {
   }
 };
 
-// 로그인 버튼 렌더링 함수 (재사용을 위해 분리)
-const renderGoogleSignInButton = () => {
+// ✨ 우리가 만든 버튼을 클릭했을 때 GSI 로그인 과정을 시작하는 함수 ✨
+const triggerGoogleLogin = () => {
   if (window.google && window.google.accounts && window.google.accounts.id && googleClientId) {
-    window.google.accounts.id.initialize({
-      client_id: googleClientId,
-      callback: window.handleCredentialResponse,
-      auto_select: false,
-      cancel_on_tap_outside: true,
+    // initialize는 onMounted에서 한번만 호출
+    // prompt()를 호출하여 Google 로그인 선택 창을 띄웁니다.
+    window.google.accounts.id.prompt((notification) => {
+      // prompt()의 콜백은 One Tap UI 상태를 알려주지만,
+      // 우리는 GSI 팝업 플로우를 주로 사용하므로,
+      // 별도의 action 없이 GSI가 팝업을 띄우는 역할만 하게 둡니다.
+      if (notification.isCanceled()) {
+        console.log("Google login prompt was canceled.");
+      } else if (notification.isSkippedMoment()) {
+        console.log("Google login prompt was skipped (moment not available).");
+      }
     });
-    
-    // 버튼을 다시 렌더링 요청
-    window.google.accounts.id.renderButton(
-      document.getElementById("google-signin-button"), 
-      { theme: "outline", size: "large", text: "signin", shape: "rectangular" } // ✨ "signin_with" -> "signin"으로 변경! ✨
-    );
   } else {
     console.error("Google Identity Services script not ready or client ID is invalid.");
+    alert("Google 로그인 서비스를 초기화할 수 없습니다. 잠시 후 다시 시도해 주세요.");
   }
 };
 
@@ -84,26 +88,27 @@ const renderGoogleSignInButton = () => {
 const handleSignOut = () => {
   auth.logout(); 
   alert("로그아웃되었습니다.");
-  setTimeout(() => {
-    renderGoogleSignInButton();
-  }, 100); 
+  // ✨ 로그아웃 시 Google 세션을 초기화하는 것이 좋습니다. ✨
+  if (window.google && window.google.accounts && window.google.accounts.id) {
+    window.google.accounts.id.disableAutoSelect(); // 다음에 자동 로그인 방지
+    // GSI는 명시적인 클라이언트측 로그아웃 API가 없으므로,
+    // 세션 토큰 삭제와 자동선택 방지 정도로 처리합니다.
+  }
 };
 
-// auth.isAuthenticated() 값의 변경을 감시
-watch(() => auth.isAuthenticated(), (newValue, oldValue) => {
-  if (oldValue && !newValue) { 
-    console.log('User logged out. Attempting to re-render Google Sign-In button.');
-  } else if (!oldValue && newValue) { 
-    console.log('User logged in. Google Sign-In button should be hidden.');
-  }
-});
-
-
 onMounted(() => {
-  if (!auth.isAuthenticated()) {
-    renderGoogleSignInButton();
+  // 컴포넌트 마운트 시 GSI 초기화는 한 번만!
+  if (window.google && window.google.accounts && window.google.accounts.id && googleClientId) {
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: window.handleCredentialResponse,
+      auto_select: false, // 자동 로그인 방지
+      cancel_on_tap_outside: true, // 팝업 외부 클릭 시 취소
+    });
+    // GSI 버튼 렌더링은 더 이상 하지 않습니다.
+    // prompt()는 사용자가 버튼 클릭 시 호출됩니다.
   } else {
-    console.log('User already authenticated. Showing logout button.');
+    console.error("Google Identity Services script not ready or client ID is invalid.");
   }
 });
 
@@ -153,8 +158,20 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Google Sign-In 버튼을 감싸는 div */
-#google-signin-button {
+/* ✨ 우리가 만든 커스텀 로그인 버튼 스타일 ✨ */
+.custom-google-login-btn {
   margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 1em;
+  color: white;
+  background-color: #4285F4; /* Google Blue */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #357ae8;
+  }
 }
 </style>
