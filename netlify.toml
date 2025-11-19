@@ -1,0 +1,6 @@
+[build]
+  publish = "dist"         # 빌드된 파일들이 위치하는 디렉토리 (Vite 기본값)
+  command = "npm run build" # 빌드 명령어
+
+[functions]
+  directory = "netlify/functions" # Netlify Functions 코드가 있는 디렉토리

@@ -8,7 +8,6 @@
         로그아웃
       </button>
     </div>
-    <!-- ✨ 이 div 태그에서 `data-client_id` 속성을 제거했어! ✨ -->
     <div v-else id="g_id_onload"
       data-context="signin"
       data-ux_mode="popup"
@@ -29,8 +28,10 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 
-// ✨ 환경 변수에서 클라이언트 ID 가져오기 ✨
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+// ✨ 환경 변수 값이 제대로 들어오는지 확인하는 로그 추가 ✨
+console.log('VITE_GOOGLE_CLIENT_ID:', googleClientId); 
 
 // 사용자 이메일을 저장할 반응형 변수
 const userEmail = ref(null);
@@ -40,54 +41,66 @@ window.handleCredentialResponse = (response) => {
   const idToken = response.credential;
   console.log("Encoded ID Token: " + idToken);
 
-  try {
-    const decodedToken = JSON.parse(atob(idToken.split('.')[1]));
-    userEmail.value = decodedToken.email;
-    console.log("Logged in as:", userEmail.value);
-    
-    alert(`로그인 성공! ${userEmail.value}`);
-
-  } catch (error) {
-    console.error("Failed to decode ID token:", error);
+  // ✨ Netlify Function으로 ID 토큰 전송 로직 ✨
+  fetch('/.netlify/functions/verify-google-token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ idToken }),
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.token) {
+      userEmail.value = data.email;
+      console.log("Login successful from Netlify Function:", data.email);
+      alert(`로그인 성공! ${data.email} (Netlify Function 검증 완료)`);
+      // ✨ 여기서 받은 data.token (커스텀 인증 토큰)을 저장하고 사용해야 합니다.
+      // 예: localStorage.setItem('authToken', data.token);
+    } else {
+      console.error("Netlify Function login failed:", data.body);
+      alert(`로그인 실패: ${data.body || '서버 오류'}`);
+      userEmail.value = null;
+    }
+  })
+  .catch(error => {
+    console.error("Error calling Netlify Function:", error);
+    alert("로그인 중 오류 발생 (Netlify Function 통신 오류)");
     userEmail.value = null;
-  }
+  });
 };
 
 // 로그아웃 함수
 const handleSignOut = () => {
   if (window.google && window.google.accounts && window.google.accounts.id) {
-    // 로그아웃 시 클라이언트 측에서만 사용자 상태를 지우는 방식으로 구현
-    // 구글 서비스 자체에서 연결을 해제하려면 google.accounts.id.revoke를 사용해야 함
-    // (보통 사용자가 원할 때만 호출)
-    userEmail.value = null; // UI에서 이메일 제거
+    userEmail.value = null;
+    // localStorage.removeItem('authToken'); // 저장된 인증 토큰 삭제
     alert("로그아웃되었습니다.");
   }
 };
 
 onMounted(() => {
   // `google.accounts.id.initialize` 함수를 사용하여 Google Sign-In 초기화
-  if (window.google && window.google.accounts && window.google.accounts.id) {
+  if (window.google && window.google.accounts && window.google.accounts.id && googleClientId) {
     window.google.accounts.id.initialize({
-      client_id: googleClientId, // JavaScript에서 클라이언트 ID 설정
-      callback: handleCredentialResponse // 로그인 성공 시 호출될 콜백 함수
+      client_id: googleClientId,
+      callback: handleCredentialResponse
     });
     
-    // ✨ "Google로 로그인" 버튼을 렌더링 ✨
     window.google.accounts.id.renderButton(
-      document.querySelector(".g_id_signin"), // 버튼이 렌더링될 DOM 요소
-      { theme: "outline", size: "large", text: "signin_with", shape: "rectangular" } // 버튼 스타일
+      document.querySelector(".g_id_signin"),
+      { theme: "outline", size: "large", text: "signin_with", shape: "rectangular" }
     );
-    
-    // 페이지 로드 시 즉시 자격증명 응답 가져오기 (자동 로그인 시도)
-    // window.google.accounts.id.prompt(); 
-
   } else {
-    console.error("Google Identity Services script not loaded.");
+    console.error("Google Identity Services script not loaded OR Client ID is missing.");
+    if (!googleClientId) {
+      alert("오류: Google Client ID 환경 변수(VITE_GOOGLE_CLIENT_ID)를 찾을 수 없습니다.");
+      console.error("Missing VITE_GOOGLE_CLIENT_ID. Check Netlify environment variables.");
+    }
   }
 });
 
 onBeforeUnmount(() => {
-  // 컴포넌트 언마운트 시 전역 콜백 제거 (불필요할 수 있지만 안전을 위해)
   if (window.handleCredentialResponse) {
     delete window.handleCredentialResponse;
   }
