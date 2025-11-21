@@ -1,0 +1,57 @@
+# .github/workflows/deploy.yml
+name: Deploy Youngsun Gallery Website to GitHub Pages # 워크플로우의 이름. GitHub Actions 탭에서 이 이름으로 표시됩니다.
+
+# 어떤 이벤트가 발생했을 때 이 워크플로우를 실행할지 정의합니다.
+# 여기서는 'main' 브랜치에 코드가 푸시될 때 실행되도록 설정합니다.
+on:
+  push:
+    branches:
+      - main # 'main' 브랜치에 코드가 푸시되면 이 워크플로우를 실행합니다.
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # 워크플로우를 실행할 환경을 설정합니다 (최신 Ubuntu 서버 사용).
+
+    steps:
+      - name: Checkout repository # 'youngsungallery/website' 저장소의 코드를 가상 환경으로 가져옵니다.
+        uses: actions/checkout@v4 # GitHub 공식 액션인 checkout@v4를 사용합니다.
+
+      - name: Setup Node.js # 프로젝트 빌드에 필요한 Node.js 환경을 설정합니다.
+        uses: actions/setup-node@v4 # GitHub 공식 액션인 setup-node@v4를 사용합니다.
+        with:
+          # package.json의 engines.node 버전에 맞춰 Node.js 버전을 20으로 설정합니다.
+          node-version: '20' 
+
+      - name: Cache Node.js modules # ✨ npm 패키지 캐싱으로 의존성 설치 시간 단축 ✨
+        # 이 스텝은 'node_modules'나 npm 캐시를 재활용하여 빌드 시간을 크게 줄여줍니다.
+        uses: actions/cache@v4 # GitHub 공식 캐시 액션을 사용합니다.
+        with:
+          path: ~/.npm # npm 캐시가 저장될 경로를 지정합니다.
+          # 캐시 키를 생성합니다. 'package-lock.json' 파일의 내용이 변경되면 새로운 키가 생성되어 캐시가 무효화됩니다.
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }} 
+          # 캐시 키와 정확히 일치하는 캐시를 찾지 못했을 때, 유사한 캐시를 복원하려고 시도합니다.
+          restore-keys: | 
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies # 프로젝트에 필요한 의존성 패키지들을 설치합니다.
+        # package.json에 정의된 모든 dependencies 및 devDependencies를 설치합니다.
+        # `npm install` 대신 `npm ci` (Clean Install)를 사용하여 CI 환경에서 더 빠르고 일관된 설치를 보장합니다.
+        run: npm ci 
+
+      - name: Build project # Vue.js 프로젝트 빌드를 실행합니다.
+        # package.json의 scripts에 정의된 "build": "vite build" 명령어가 실행됩니다.
+        # 빌드 결과물(정적 파일들)은 보통 './dist' 폴더에 생성됩니다.
+        run: npm run build 
+
+      - name: Deploy to GitHub Pages # ✨ 빌드된 결과물을 GitHub Pages에 배포합니다. ✨
+        # 'peaceiris/actions-gh-pages' 액션은 빌드된 파일을 지정된 브랜치에 푸시하고 GitHub Pages를 업데이트합니다.
+        uses: peaceiris/actions-gh-pages@v3 
+        with:
+          # GitHub이 자동으로 제공하는 토큰입니다. 이 토큰은 저장소에 대한 쓰기 권한이 있으며, 
+          # 비밀 값으로 안전하게 처리되므로 별도로 Secrets에 추가할 필요는 없습니다.
+          github_token: ${{ secrets.GITHUB_TOKEN }} 
+          # 빌드된 정적 파일들이 있는 폴더를 지정합니다. (Vue/Vite 프로젝트에서는 기본적으로 'dist' 폴더입니다).
+          publish_dir: ./dist 
+          # 'gh-pages'라는 이름의 브랜치로 빌드 결과물을 푸시합니다. GitHub Pages는 이 브랜치의 내용을 서비스합니다. 
+          # 이 브랜치는 GitHub Actions가 자동으로 생성하거나 업데이트해 줄 것입니다.
+          publish_branch: gh-pages 
