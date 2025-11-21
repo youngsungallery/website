@@ -1,0 +1,15 @@
+/netlify-identity-success.html    /netlify-identity-success.html    200!
+/admin/*                          /index.html                       200
+/*                                /index.html                       200
+
+# Netlify Identity Callback Hack for Deprecated Service (Last Resort!)
+# 이 규칙은 #invite_token이나 #recovery_token이 있는 URL을 감지해서
+# netlify-identity-success.html 페이지로 리라이트하여 토큰을 처리하게 합니다.
+# 다만, 브라우저의 #hash는 서버로 전송되지 않는다는 HTML/HTTP의 특성 때문에 
+# 이 규칙이 완벽하게 작동하지 않을 수 있습니다. 하지만 SPA에서 해시를 처리하지 
+# 못하는 문제를 우회하는 마지막 시도입니다.
+
+# invite_token을 포함하는 모든 경로를 netlify-identity-success.html로 리라이트
+/netlify-identity-success.html?#invite_token=:token    /netlify-identity-success.html#invite_token=:token 200
+# recovery_token을 포함하는 모든 경로를 netlify-identity-success.html로 리라이트
+/netlify-identity-success.html?#recovery_token=:token    /netlify-identity-success.html#recovery_token=:token 200
