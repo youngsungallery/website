@@ -1,18 +1,24 @@
+<!-- index.html -->
 <!DOCTYPE html>
-<html lang="">
+<html lang="ko">
   <head>
-    <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>영선갤러리</title>
-    <!-- Netlify Identity 위젯 스크립트 (사용 안 할 거면 지워도 되지만 일단 유지) -->
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Youngsun Gallery</title>
     
-    <!-- ✨ 구글 Identity Services (GIS) 스크립트 추가 ✨ -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- ⭐️⭐️⭐️ 이 부분을 <head> 태그 안에 추가해 줘! ⭐️⭐️⭐️ -->
+    <!-- GitHub Pages의 프로젝트 페이지 URL의 기본 경로를 명시적으로 설정합니다. -->
+    <!-- 모든 상대 경로 리소스(JS, CSS, 이미지 등)가 이 경로를 기준으로 로드됩니다. -->
+    <base href="/website/" /> 
+
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <!-- ⭐️ 이 스크립트 참조는 그대로 유지해도 돼. ⭐️ -->
+    <!-- Vite가 빌드 시 이 경로를 변경할 거야. -->
+    <!-- <base> 태그 덕분에 /src/main.js와 같은 경로가 
+         /website/src/main.js (또는 빌드된 자산 경로)로 해석될 가능성이 높아집니다. -->
+    <script type="module" src="/src/main.js"></script> 
   </body>
 </html>
