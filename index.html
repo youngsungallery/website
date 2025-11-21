@@ -5,20 +5,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Youngsun Gallery</title>
-    
-    <!-- ⭐️⭐️⭐️ 이 부분을 <head> 태그 안에 추가해 줘! ⭐️⭐️⭐️ -->
-    <!-- GitHub Pages의 프로젝트 페이지 URL의 기본 경로를 명시적으로 설정합니다. -->
-    <!-- 모든 상대 경로 리소스(JS, CSS, 이미지 등)가 이 경로를 기준으로 로드됩니다. -->
-    <base href="/website/" /> 
-
+    <title>영선갤러리</title>
+    <!-- 이전 `<base href="/website/" />`는 삭제해 봐. 오히려 혼란을 줄 수 있어. -->
   </head>
   <body>
     <div id="app"></div>
-    <!-- ⭐️ 이 스크립트 참조는 그대로 유지해도 돼. ⭐️ -->
-    <!-- Vite가 빌드 시 이 경로를 변경할 거야. -->
-    <!-- <base> 태그 덕분에 /src/main.js와 같은 경로가 
-         /website/src/main.js (또는 빌드된 자산 경로)로 해석될 가능성이 높아집니다. -->
-    <script type="module" src="/src/main.js"></script> 
+    <!-- ⭐️⭐️⭐️ 이 부분을 삭제하거나 주석 처리해야 해! ⭐️⭐️⭐️ -->
+    <!-- Vite가 빌드 시 여기에 빌드된 번들 자산들을 자동으로 삽입해야 해! -->
+    <!-- 수동으로 넣었던 src="/src/main.js" 코드를 완전히 없애야 해. -->
+    <!-- <script type="module" src="/src/main.js"></script> -->
   </body>
 </html>
