@@ -1,9 +1,18 @@
 <!-- website/src/views/HomeView.vue -->
 <template>
   <div>
-    <ExhibitionSchedule />
-    <ExhibitionHistory />
-    <LectureHistory />
+    <!-- ⭐️⭐️⭐️ 각 컴포넌트를 감싸는 태그에 id를 부여합니다! ⭐️⭐️⭐️ -->
+    <section id="exhibition-schedule">
+      <ExhibitionSchedule />
+    </section>
+
+    <section id="exhibition-history">
+      <ExhibitionHistory />
+    </section>
+
+    <section id="lecture-history">
+      <LectureHistory />
+    </section>
   </div>
 </template>
 

@@ -1,10 +1,16 @@
 <template>
   <nav class="main-nav">
     <ul>
-      <li><a href="#app" class="brand-logo">영선갤러리</a></li>
-      <li><a href="#exhibition-schedule">전시 일정</a></li>
-      <li><a href="#exhibition-history">전시 이력</a></li>
-      <li><a href="#lecture-history">특강 이력</a></li>
+      <!-- ⭐️ '/#app' 대신 현재 경로의 '#'으로 이동하도록 수정 (대개 '#app'은 전체 앱의 id이므로 스크롤용으로 부적합) ⭐️ -->
+      <!-- Vue Router에서 현재 경로를 유지하면서 해시만 바꾸려면 { path: '/' }와 hash를 조합 -->
+      <!-- to="/"는 홈 라우트로 이동 -->
+      <li><router-link to="/" class="brand-logo">영선갤러리</router-link></li>
+
+      <!-- ⭐️⭐️⭐️ 여기가 가장 중요! router-link에 { path: '/', hash: '#섹션ID' } 사용 ⭐️⭐️⭐️ -->
+      <!-- 이렇게 하면 Vue Router가 URL의 hash 부분만 변경하고, HomeView를 유지하면서 scrollBehavior를 통해 스크롤합니다. -->
+      <li><router-link :to="{ path: '/', hash: '#exhibition-schedule' }">전시 일정</router-link></li>
+      <li><router-link :to="{ path: '/', hash: '#exhibition-history' }">전시 이력</router-link></li>
+      <li><router-link :to="{ path: '/', hash: '#lecture-history' }">특강 이력</router-link></li>
     </ul>
   </nav>
 </template>

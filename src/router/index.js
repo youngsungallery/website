@@ -1,7 +1,5 @@
-// src/router/index.js
+// src/router/index.js (수정된 부분)
 import { createRouter, createWebHashHistory } from 'vue-router'
-
-// HomeView.vue는 views 폴더에 있다고 명시적으로 임포트!
 import HomeView from '@/views/HomeView.vue'; 
 
 const routes = [
@@ -13,11 +11,25 @@ const routes = [
 ];
 
 const router = createRouter({
-  // ⭐️ createWebHashHistory에 아무런 인자도 넘겨주지 않거나, 
-  // 넘겨준다면 './'로 명시적으로 현재 경로를 기준으로 라우팅하도록 합니다.
-  history: createWebHashHistory(), // 👈 이렇게 변경
-  // 또는 history: createWebHashHistory('./'), // 이렇게도 시도해 볼 수 있습니다.
-  routes
+  history: createWebHashHistory(),
+  routes,
+  // ⭐️⭐️⭐️ 이 부분을 다시 한번 확인하고 추가해 줘! ⭐️⭐️⭐️
+  scrollBehavior(to, from, savedPosition) {
+    if (to.hash) {
+      const el = document.querySelector(to.hash); // 해시 값으로 DOM 엘리먼트 찾기
+      if (el) {
+        return {
+          el: el,
+          behavior: 'smooth',
+          // top: el.offsetTop, // 필요에 따라 offsetTop을 사용할 수도 있지만 el 자체가 더 일반적
+        };
+      }
+    } else if (savedPosition) {
+      return savedPosition;
+    } else {
+      return { left: 0, top: 0 };
+    }
+  },
 });
 
 export default router
