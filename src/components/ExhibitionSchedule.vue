@@ -20,7 +20,7 @@
     </div>
     <div v-else-if="!currentExhibition && !currentLecture" class="no-data">등록된 전시/특강 일정이 없습니다.</div>
     
-    <!-- ✨ 특강 정보 표시 영역 (전시 정보 아래에 추가) ✨ 
+    <!-- ✨ 특강 정보 표시 영역 (전시 정보 아래에 추가) ✨  -->
     <div v-if="currentLecture" class="current-lecture-card">
       <div class="card-thumbnail">
         <img v-if="currentLecture.image" :src="currentLecture.image" :alt="currentLecture.title + ' 포스터'" class="card-poster">
@@ -31,7 +31,6 @@
         <p v-if="currentLecture.date" class="card-date">{{ currentLecture.date }}</p>
       </div>
     </div>
--->
   </section>
 </template>
 
