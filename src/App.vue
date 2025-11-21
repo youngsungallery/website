@@ -1,3 +1,4 @@
+<!-- App.vue -->
 <template>
   <div id="app">
     <AppHeader /> 
@@ -16,23 +17,20 @@ import AppFooter from './components/AppFooter.vue';
 import { onMounted } from 'vue'; 
 
 onMounted(() => {
+  // ⭐️⭐️⭐️ Netlify Identity 관련 코드들을 모두 제거하거나 주석 처리합니다! ⭐️⭐️⭐️
+  /*
   if (window.netlifyIdentity) {
     window.netlifyIdentity.init(); 
 
     window.netlifyIdentity.on("init", user => {
       console.log("Netlify Identity initialized:", user);
-      // if (!user) {
-        // ✨ 이 부분의 주석을 다시 처리하거나 삭제! ✨
-        // window.netlifyIdentity.open(); 
-      // }
     });
-
-    // ✨ 아래 줄도 만약 활성화되어 있었다면 주석 처리! ✨
-    // window.netlifyIdentity.open(); 
   } else {
     console.error('Netlify Identity widget script not found in window.');
     console.log('Ensure the script tag is correctly placed in index.html and loaded.');
   }
+  */
+  console.log("Vue App Mounted!"); // 앱 마운트 확인용 메시지 추가 (선택 사항)
 });
 
 </script>
