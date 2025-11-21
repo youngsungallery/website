@@ -45,7 +45,7 @@ const error = ref(null);
 
 onMounted(async () => {
   try {
-    const exhibitionResponse = await fetch('/data/exhibitions.json'); 
+    const exhibitionResponse = await fetch(import.meta.env.BASE_URL + '/data/exhibitions.json'); 
     if (!exhibitionResponse.ok) {
       throw new Error(`Exhibition data HTTP error! status: ${exhibitionResponse.status}`);
     }

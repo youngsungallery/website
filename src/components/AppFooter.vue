@@ -68,7 +68,7 @@ const formattedNotionTestMessage = computed(() => {
 // 컴포넌트가 마운트될 때 JSON 파일 읽어오기
 onMounted(async () => {
   try {
-    const response = await fetch('/data/footer-test-data.json');
+    const response = await fetch(import.meta.env.BASE_URL + '/data/footer-test-data.json');
     if (!response.ok) { // HTTP 에러 처리
       throw new Error(`HTTP error! status: ${response.status}`);
     }
