@@ -54,7 +54,7 @@ onMounted(async () => {
       currentExhibition.value = exhibitionData[0]; // 첫 번째 항목 (최신으로 가정)
     }
 
-    const lectureResponse = await fetch('/data/lectures.json');
+    const lectureResponse = await fetch(import.meta.env.BASE_URL + '/data/lectures.json');
     if (!lectureResponse.ok) {
       throw new Error(`Lecture data HTTP error! status: ${lectureResponse.status}`);
     }
