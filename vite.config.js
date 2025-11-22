@@ -6,7 +6,7 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [vue()],
-  base: '/website/', 
+  base: '/', 
 
   // ✨ 이 부분을 추가해 줘! ✨
   resolve: {
