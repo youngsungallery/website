@@ -46,7 +46,7 @@ const loadMoreExhibitions = () => {
 
 onMounted(async () => {
   try {
-    const response = await fetch(import.meta.env.BASE_URL + '/data/exhibitions.json'); 
+    const response = await fetch('/data/exhibitions.json'); 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
