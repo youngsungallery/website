@@ -32,21 +32,22 @@
   gap: 5px;
 }
 
-/* Vite와 Vue 로고 모두에 동일하게 적용되는 스타일 */
-.app-footer .logo {
-  height: 1.8em; /* 아이콘 크기를 동일하게 조정 */
+/* 모든 로고 이미지에 공통으로 적용되는 스타일 */
+.app-footer .tech-stack .logo {
+  height: 1.8em; /* 아이콘 크기 */
   width: auto; /* 비율 유지를 위해 auto */
   margin: 0 5px;
   will-change: filter;
   transition: filter 300ms;
 }
 
-/* 각 로고별 호버 효과 */
-.app-footer .vite-logo:hover {
+/* Vite 로고의 특정 호버 효과 (src 속성 활용) */
+.app-footer .tech-stack a img[src="/vite.svg"]:hover {
   filter: drop-shadow(0 0 1em #646cffaa);
 }
 
-.app-footer .vue-logo:hover {
+/* Vue 로고의 특정 호버 효과 (src 속성 활용) */
+.app-footer .tech-stack a img[src="/vue.svg"]:hover {
   filter: drop-shadow(0 0 1em #42b883aa);
 }
 

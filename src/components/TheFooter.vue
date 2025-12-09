@@ -6,17 +6,16 @@
     <hr class="footer-divider"> <!-- 구분선 -->
     <div class="footer-section tech-stack">
       <a href="https://vitejs.dev" target="_blank" rel="noopener noreferrer">
-        <img src="/vite.svg" class="logo vite-logo" alt="Vite logo" />
+        <img src="/vite.svg" class="logo" alt="Vite logo" />
       </a>
       <a href="https://vuejs.org/" target="_blank" rel="noopener noreferrer">
-        <img src="/vue.svg" class="logo vue-logo" alt="Vue logo" />
+        <img src="/vue.svg" class="logo" alt="Vue logo" />
       </a>
       <span>Powered by Vite & Vue</span>
     </div>
     <hr class="footer-divider"> <!-- 구분선 -->
     <div class="footer-section contact-info">
       <p>
-        <!-- 지도 URL 수정 -->
         <a href="https://naver.me/xzlgF1UM" target="_blank" rel="noopener noreferrer">
           경기 수원시 영통구 덕영대로 1471번길 2층
           <span class="icon">🗺️</span> <!-- 지도 아이콘 -->
