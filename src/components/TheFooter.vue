@@ -2,7 +2,7 @@
   <footer class="app-footer">
     <hr class="footer-divider"> <!-- 첫 번째 구분선 (Copyright 위에) -->
     <div class="footer-section">
-      <p>Copyright © 2025 Youngsun Gallery</p>
+      <p>Copyright © 2025 Youngsun Gallery / 자동 배포 테스트중</p>
     </div>
     <div class="footer-section tech-stack">
       <a href="https://vitejs.dev" target="_blank" rel="noopener noreferrer">
