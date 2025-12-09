@@ -1,26 +1,80 @@
 /* App.vue의 푸터 스타일 (src/styles/TheFooter.scss) */
 .app-footer {
   display: flex;
-  justify-content: center;
+  flex-direction: column; /* 모든 섹션을 세로로 정렬 */
   align-items: center;
   padding: 20px;
   margin-top: 50px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #eee; /* 최상단 구분선 */
   color: #666;
   font-size: 0.9em;
+  text-align: center; /* 전체 텍스트 중앙 정렬 */
+  background-color: #f9f9f9; /* 푸터 배경색 추가 */
 }
 
-.app-footer .logo {
-  height: 2em; /* 푸터에 맞게 아이콘 크기 조절 */
-  margin: 0 10px;
+.footer-section {
+  padding: 10px 0; /* 각 섹션별 내부 패딩 */
+  margin: 0; /* 기본 마진 제거 */
+}
+
+.footer-divider {
+  width: 80%; /* 구분선 길이 */
+  max-width: 400px; /* 너무 길어지지 않게 최대 폭 설정 */
+  border: 0;
+  height: 1px;
+  background-color: #ddd; /* 구분선 색상 */
+  margin: 10px 0; /* 구분선 위아래 마진 */
+}
+
+.tech-stack {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.logo.tech-logo { /* tech-logo 클래스 추가로 크기 조절 */
+  height: 1.5em; /* 일관된 아이콘 크기 */
+  width: auto;
+  margin: 0 5px;
   will-change: filter;
   transition: filter 300ms;
 }
 
-.app-footer .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa); /* Vite 로고 hover 효과 */
+.logo.tech-logo:hover {
+  filter: drop-shadow(0 0 1em #646cffaa); /* Vite 로고 hover 효과 */
 }
 
-.app-footer .vue-logo:hover {
-  filter: drop-shadow(0 0 2em #42b883aa); /* Vue 로고 hover 효과 */
+.logo.tech-logo.vue-logo:hover { /* Vue 로고에만 적용되는 hover 효과 */
+  filter: drop-shadow(0 0 1em #42b883aa);
+}
+
+.contact-info, .social-links {
+    display: flex;
+    flex-direction: column;
+    gap: 5px; /* 정보 줄 간 간격 */
+}
+
+.contact-info p, .social-links a {
+  margin: 0; /* 단락 기본 마진 제거 */
+  text-decoration: none; /* 링크 기본 밑줄 제거 */
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.contact-info a, .social-links a {
+  color: #666;
+  text-decoration: none;
+}
+
+.contact-info a:hover, .social-links a:hover {
+  text-decoration: underline;
+  color: #42b883; /* 호버 색상 변경 */
+}
+
+.icon {
+    margin-left: 5px;
+    font-size: 1.2em; /* 아이콘 크기 */
+    line-height: 1; /* 아이콘 정렬 */
 }
