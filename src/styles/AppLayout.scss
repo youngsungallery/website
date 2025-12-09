@@ -1,0 +1,12 @@
+/* App.vue의 전역 레이아웃 스타일 (src/styles/AppLayout.scss) */
+#app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; /* 뷰포트 높이만큼 최소 높이 설정 */
+}
+
+/* .router-view-container 클래스는 현재 App.vue 템플릿에 없으므로 나중에 사용할 경우에 대비 */
+/* 현재 <router-view />에 직접 스타일을 적용하지 않으므로 이 셀렉터는 당장은 필요없습니다. */
+/* .router-view-container {
+  flex-grow: 1;
+} */
