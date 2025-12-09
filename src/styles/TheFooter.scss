@@ -32,9 +32,8 @@
   gap: 5px;
 }
 
-/* 모든 로고 이미지에 공통으로 적용되는 스타일 */
-.app-footer .tech-stack .logo,
-.app-footer .social-links .social-icon { /* social-icon 추가 */
+/* 모든 .logo 클래스 이미지에 공통으로 적용되는 스타일 (Vite, Vue, YouTube, KakaoTalk) */
+.app-footer .logo {
   height: 1.8em; /* 아이콘 크기 통일 */
   width: auto; /* 비율 유지를 위해 auto */
   margin: 0 5px;
@@ -51,8 +50,9 @@
   filter: drop-shadow(0 0 1em #42b883aa);
 }
 
-/* social-icon 호버 효과 */
-.app-footer .social-links .social-icon:hover {
+/* 소셜 로고 (youtube.png, kakaotalk.png) 호버 효과 */
+.app-footer .social-links a img[src="/youtube.png"]:hover,
+.app-footer .social-links a img[src="/kakaotalk.png"]:hover {
     filter: brightness(0.8); /* 약간 어둡게 */
 }
 
@@ -81,7 +81,7 @@
   color: #42b883; /* 호버 색상 변경 */
 }
 
-.icon {
+.icon { /* 지도, 전화 아이콘 */
     margin-left: 5px;
     font-size: 1.2em; /* 아이콘 크기 */
     line-height: 1; /* 아이콘 정렬 */
