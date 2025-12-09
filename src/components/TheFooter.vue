@@ -6,10 +6,10 @@
     </div>
     <div class="footer-section tech-stack">
       <a href="https://vitejs.dev" target="_blank" rel="noopener noreferrer">
-        <img src="/vite.svg" class="logo" alt="Vite logo" />
+        <img src="/vite.png" class="logo" alt="Vite logo" />
       </a>
       <a href="https://vuejs.org/" target="_blank" rel="noopener noreferrer">
-        <img src="/vue.svg" class="logo" alt="Vue logo" />
+        <img src="/vue.png" class="logo" alt="Vue logo" />
       </a>
       <span>Powered by Vite & Vue</span>
     </div>
