@@ -32,19 +32,21 @@
   gap: 5px;
 }
 
-.logo.tech-logo { /* tech-logo 클래스 추가로 크기 조절 */
-  height: 1.5em; /* 일관된 아이콘 크기 */
-  width: auto;
+/* Vite와 Vue 로고 모두에 동일하게 적용되는 스타일 */
+.app-footer .logo {
+  height: 1.8em; /* 아이콘 크기를 동일하게 조정 */
+  width: auto; /* 비율 유지를 위해 auto */
   margin: 0 5px;
   will-change: filter;
   transition: filter 300ms;
 }
 
-.logo.tech-logo:hover {
-  filter: drop-shadow(0 0 1em #646cffaa); /* Vite 로고 hover 효과 */
+/* 각 로고별 호버 효과 */
+.app-footer .vite-logo:hover {
+  filter: drop-shadow(0 0 1em #646cffaa);
 }
 
-.logo.tech-logo.vue-logo:hover { /* Vue 로고에만 적용되는 hover 효과 */
+.app-footer .vue-logo:hover {
   filter: drop-shadow(0 0 1em #42b883aa);
 }
 
