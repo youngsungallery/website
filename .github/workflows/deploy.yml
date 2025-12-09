@@ -27,9 +27,6 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3 # gh-pages 액션 사용
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }} # GitHub 제공 토큰 사용
-          publish_dir: ./dist
-          # --- 이 두 줄이 추가/수정된 부분입니다 ---
-          external_repository: youngsungallery/youngsungallery.github.io # 타겟 저장소 지정
-          publish_branch: main # 타겟 저장소의 main 브랜치로 푸시 (youngsungallery.github.io는 main 브랜치로 서비스됨)
-          # ----------------------------------------
+          github_token: ${{ secrets.GITHUB_TOKEN }} # GitHub 제공 토큰 사용 (공개 저장소이므로 사용 가능)
+          publish_dir: ./dist # 빌드 결과물이 있는 폴더 지정
+          publish_branch: gh-pages # 결과물을 푸시할 브랜치 지정
