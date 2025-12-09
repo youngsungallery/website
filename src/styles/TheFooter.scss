@@ -34,7 +34,7 @@
 
 /* 모든 이미지 아이콘 (Vite, Vue, YouTube, KakaoTalk)에 공통으로 적용되는 스타일 */
 .app-footer img.icon {
-  height: 0.5em; /* 이미지 아이콘 크기 조정 (span.icon의 font-size 1.2em보다 약간 크게) */
+  font-size: 1.2em; /* 이미지 아이콘 크기 조정 (span.icon의 font-size 1.2em보다 약간 크게) */
   width: auto; /* 비율 유지를 위해 auto */
   margin: 0 5px;
   will-change: filter;
