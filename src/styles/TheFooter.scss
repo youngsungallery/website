@@ -1,40 +1,52 @@
 /* App.vue의 푸터 스타일 (src/styles/TheFooter.scss) */
+@use "sass:color"; // Sass Color 모듈 사용 선언 (필요시 색상 함수에 사용)
+
+/* --- PC 기본 스타일 --- */
 .app-footer {
   display: flex;
-  flex-direction: column; /* 모든 섹션을 세로로 정렬 */
-  align-items: center;
+  flex-direction: column; /* PC 기본값은 세로 정렬 (각 섹션이 한 줄에 100% 차지하도록) */
+  align-items: center;    /* 가운데 정렬 */
   padding: 20px;
   margin-top: 50px;
-  border-top: 1px solid #eee; /* 최상단 구분선 */
+  border-top: 1px solid #eee;
   color: #666;
   font-size: 0.9em;
-  text-align: center; /* 전체 텍스트 중앙 정렬 */
-  background-color: #f9f9f9; /* 푸터 배경색 추가 */
+  text-align: center;
+  background-color: #f9f9f9;
 }
 
 .footer-section {
-  padding: 5px 0; /* 각 섹션별 내부 패딩 */
-  margin: 0; /* 기본 마진 제거 */
+  padding: 5px 0; /* 간격 조절 */
+  margin: 0;
+  width: 100%;    /* 섹션이 항상 전체 너비를 차지 */
+  max-width: 800px; /* 전체 푸터 내용이 너무 넓어지지 않도록 최대 너비 제한 */
+  text-align: center;
+  // flex-basis: 25%; // flex-direction: column 이므로 이 속성은 여기서는 의미가 적음
 }
 
 .footer-divider {
-  width: 80%; /* 구분선 길이 */
-  max-width: 400px; /* 너무 길어지지 않게 최대 폭 설정 */
+  display: block; /* 모든 디바이스에서 구분선 보이도록 */
+  width: 80%;
+  max-width: 400px;
   border: 0;
   height: 1px;
-  background-color: #ddd; /* 구분선 색상 */
-  margin: 10px 0; /* 구분선 위아래 마진 */
+  background-color: #ddd;
+  margin: 10px 0; /* 간격 조절 */
 }
 
 .tech-stack {
   display: flex;
   align-items: center;
+  justify-content: center; /* 아이콘들도 가운데 정렬 */
   gap: 5px;
+  flex-wrap: wrap; /* 공간 부족 시 줄바꿈 허용 */
+  flex-direction: row; /* 모든 디바이스에서 아이콘들은 가로 정렬 유지 */
 }
 
 /* 모든 이미지 아이콘 (Vite, Vue, YouTube, KakaoTalk)에 공통으로 적용되는 스타일 */
 .app-footer img.icon {
-  height: 1.0em;
+  height: 1.5em; /* PC 기본 아이콘 높이 */
+  width: auto;   /* 비율 유지 */
   margin: 0 5px;
   will-change: filter;
   transition: filter 300ms;
@@ -43,47 +55,107 @@
 /* span.icon (지도, 전화 아이콘) */
 .icon {
     margin-left: 5px;
-    font-size: 1.0em; /* 텍스트 기반 아이콘 크기 */
-    line-height: 1; /* 아이콘 정렬 */
+    font-size: 1.5em; /* PC 기본 텍스트 기반 아이콘 크기 */
+    line-height: 1;
 }
 
 /* 특정 이미지 아이콘의 호버 효과 */
-.app-footer .tech-stack a img[alt="Vite logo"]:hover { /* alt 속성으로 구분 */
+.app-footer .tech-stack a img[alt="Vite logo"]:hover {
   filter: drop-shadow(0 0 1em #646cffaa);
 }
-
-.app-footer .tech-stack a img[alt="Vue logo"]:hover { /* alt 속성으로 구분 */
-  filter: drop-shadow(0 0 1em #42b883aa);
+.app-footer .tech-stack a img[alt="Vue logo"]:hover {
+  filter: drop-shadow(0 0 1em #42b883aa); // drop_shadow -> drop-shadow 수정
 }
-
 .app-footer .social-links a img[alt="YouTube icon"]:hover,
 .app-footer .social-links a img[alt="KakaoTalk icon"]:hover {
-    filter: brightness(0.8); /* 약간 어둡게 */
+    filter: brightness(0.8);
 }
+
 
 .contact-info, .social-links {
     display: flex;
     flex-direction: column;
-    gap: 5px; /* 정보 줄 간 간격 */
+    gap: 5px;
 }
 
 .contact-info p, .social-links a {
-  margin: 0; /* 단락 기본 마진 제거 */
-  text-decoration: none; /* 링크 기본 밑줄 제거 */
-  color: #666;
+  margin: 0;
+  text-decoration: none; /* 밑줄 제거 */
+  color: #666; /* 기본 글자색 지정 */
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.3s ease-in-out; /* <<-- 여기에 추가되었습니다! */
+  transition: color 0.3s ease-in-out; /* 링크 색상 전환 시간 조절 */
 }
 
-.contact-info a, .social-links a {
-  color: #666; /* 이 부분은 위에 이미 정의되어 있어서 중복될 수 있습니다. */
-  text-decoration: none;
-  // transition: color 0.3s ease-in-out; // 만약 위의 p, a 선택자에 문제가 있다면 여기에 넣어볼 수도 있습니다.
+// .contact-info 섹션 내의 링크에 대한 추가 색상 정의 (파란색 방지)
+.contact-info a {
+  color: #666; /* 브라우저 기본 파란색 확실히 덮어쓰기 */
+  text-decoration: none; /* 밑줄 확실히 제거 */
+  transition: color 0.3s ease-in-out;
 }
 
 .contact-info a:hover, .social-links a:hover {
   color: #42b883; /* 호버 색상 변경 */
-  // text-decoration: none; // 이 줄은 원래 없었고, 만약 밑줄 제거가 필요하다면 추가해야 합니다.
+}
+
+
+/* --- 태블릿 (768px 이상 ~ 1023px 이하) 스타일 --- */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .app-footer {
+    flex-direction: column; /* 태블릿에서도 세로로 유지 */
+    justify-content: center;
+    padding: 20px;
+    font-size: 0.85em; /* 폰트 크기 약간 줄임 */
+  }
+  .footer-section {
+    width: 100%; /* 태블릿에서도 섹션이 전체 너비를 차지 */
+    padding: 10px 0;
+    max-width: 800px;
+  }
+  .footer-divider {
+    display: block; /* 태블릿에서 구분선 보이게 */
+    width: 90%;
+  }
+  .app-footer img.icon {
+    height: 1.2em; /* 태블릿 아이콘 크기 */
+  }
+  .icon {
+    font-size: 1.2em;
+  }
+  .tech-stack {
+    flex-direction: row; /* 태블릿에서도 가로로 유지 */
+  }
+}
+
+/* --- 모바일 (767px 이하) 스타일 --- */
+@media (max-width: 767px) {
+  .app-footer {
+    flex-direction: column; /* 모바일에서도 세로 정렬 */
+    align-items: center;
+    padding: 15px;
+    font-size: 0.8em; /* 폰트 크기 줄임 */
+  }
+
+  .footer-section {
+    width: 100%; /* 모바일에서도 섹션이 전체 너비를 차지 */
+    padding: 5px 0;
+    margin-bottom: 10px;
+    max-width: none; /* 모바일에서는 최대 너비 제한 해제 */
+  }
+  .tech-stack {
+    flex-direction: row; /* 모바일에서도 가로 정렬 */
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .footer-divider {
+    display: block; /* 모바일에서 구분선 보이게 */
+    width: 90%;
+  }
+  .app-footer img.icon {
+    height: 1.0em; /* 모바일 아이콘 크기 (최종) */
+  }
+  .icon {
+    font-size: 1.0em;
+  }
 }
