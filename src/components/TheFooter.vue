@@ -2,7 +2,7 @@
   <footer class="app-footer">
     <hr class="footer-divider"> <!-- 첫 번째 구분선 (Copyright 위에) -->
     <div class="footer-section">
-      <p>Copyright © 2025 Youngsun Gallery / 자동 배포 테스트중</p>
+      <p>Copyright © 2025 Youngsun Gallery</p>
     </div>
     <div class="footer-section tech-stack">
       <a href="https://vitejs.dev" target="_blank" rel="noopener noreferrer">
@@ -34,7 +34,6 @@
         <!-- 유튜브 아이콘 적용 -->
         <img src="/youtube.png" class="icon" alt="YouTube icon" /> 영선갤러리 유튜브
       </a>
-      <span> | </span>
       <a href="https://open.kakao.com/o/gNPhwidf" target="_blank" rel="noopener noreferrer">
         <!-- 카카오톡 아이콘 적용 -->
         <img src="/kakaotalk.png" class="icon" alt="KakaoTalk icon" /> 영선갤러리 카카오톡
@@ -46,3 +45,7 @@
 <script setup>
 // TheFooter 컴포넌트에 필요한 스크립트 로직 (현재는 없음)
 </script>
+
+<style scoped lang="scss">
+@use '@/styles/TheFooter.scss';
+</style>

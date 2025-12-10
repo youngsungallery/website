@@ -13,7 +13,7 @@
 }
 
 .footer-section {
-  padding: 10px 0; /* 각 섹션별 내부 패딩 */
+  padding: 5px 0; /* 각 섹션별 내부 패딩 */
   margin: 0; /* 기본 마진 제거 */
 }
 
@@ -34,8 +34,7 @@
 
 /* 모든 이미지 아이콘 (Vite, Vue, YouTube, KakaoTalk)에 공통으로 적용되는 스타일 */
 .app-footer img.icon {
-  font-size: 1.2em; /* 이미지 아이콘 크기 조정 (span.icon의 font-size 1.2em보다 약간 크게) */
-  width: auto; /* 비율 유지를 위해 auto */
+  height: 1.0em;
   margin: 0 5px;
   will-change: filter;
   transition: filter 300ms;
@@ -44,7 +43,7 @@
 /* span.icon (지도, 전화 아이콘) */
 .icon {
     margin-left: 5px;
-    font-size: 1.2em; /* 텍스트 기반 아이콘 크기 */
+    font-size: 1.0em; /* 텍스트 기반 아이콘 크기 */
     line-height: 1; /* 아이콘 정렬 */
 }
 
@@ -62,7 +61,6 @@
     filter: brightness(0.8); /* 약간 어둡게 */
 }
 
-
 .contact-info, .social-links {
     display: flex;
     flex-direction: column;
@@ -76,14 +74,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: color 0.3s ease-in-out; /* <<-- 여기에 추가되었습니다! */
 }
 
 .contact-info a, .social-links a {
-  color: #666;
+  color: #666; /* 이 부분은 위에 이미 정의되어 있어서 중복될 수 있습니다. */
   text-decoration: none;
+  // transition: color 0.3s ease-in-out; // 만약 위의 p, a 선택자에 문제가 있다면 여기에 넣어볼 수도 있습니다.
 }
 
 .contact-info a:hover, .social-links a:hover {
-  text-decoration: underline;
   color: #42b883; /* 호버 색상 변경 */
+  // text-decoration: none; // 이 줄은 원래 없었고, 만약 밑줄 제거가 필요하다면 추가해야 합니다.
 }
