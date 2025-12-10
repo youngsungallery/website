@@ -2,6 +2,9 @@
   <div id="app-container">
     <!-- 라우팅된 컴포넌트(HomeView, AdminView 등)가 표시될 위치 -->
     <router-view />
+    <p style="text-align: center; color: green; font-weight: bold; margin-top: 20px;">
+      영선갤러리 - 최신 자동 배포 테스트 성공!
+    </p>
 
     <!-- 푸터 컴포넌트 -->
     <TheFooter />
