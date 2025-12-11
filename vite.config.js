@@ -1,24 +1,22 @@
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import path from 'path'; // path 모듈 임포트
+// vite.config.js
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/website/', // GitHub Pages 프로젝트 페이지 경로 설정
-  server: { // <<-- 이 부분이 추가됩니다!
-    watch: {
-      usePolling: true, // 파일 변경을 감지하기 위해 폴링 방식 사용 (WSL에서 특히 유용)
-    },
-    hmr: {
-      overlay: false // 빌드 오류 시 브라우저 오버레이 비활성화 (선택 사항)
-      // clientPort: 5173 // 필요시 HMR 클라이언트 포트를 명시적으로 지정
-      // protocol: 'ws', // 필요시 HMR 프로토콜 지정
-    }
-  }, // <<-- 여기까지 추가됩니다!
+  // ⭐⭐⭐ 여기를 확인하고 수정합니다! ⭐⭐⭐
+  base: '/', // 이 부분을 'base: "/website/"' 가 아닌 '/' 또는 '' (빈 문자열)로 변경하세요.
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'), // @ 별칭을 src 폴더로 설정
+      '@': '/src', // @ 별칭 설정 (기존에 있을 겁니다)
     },
   },
-});
+  server: {
+    host: '0.0.0.0', // WSL2에서 접근 가능하도록 설정 (기존에 있을 겁니다)
+    port: 5173,      // 포트 설정
+    watch: {
+      usePolling: true, // HMR 문제 해결을 위한 폴링 (기존에 있을 겁니다)
+    },
+  },
+})

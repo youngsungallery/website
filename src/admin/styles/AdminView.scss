@@ -1,0 +1,46 @@
+/* src/admin/styles/AdminView.scss */
+
+.admin-view {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.admin-view h1 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.admin-view p {
+  margin-bottom: 15px;
+  color: #666;
+}
+
+.admin-view button {
+  padding: 10px 20px;
+  background-color: #f44336; /* 빨간색 계열 */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  transition: background-color 0.3s ease;
+}
+
+.admin-view button:hover {
+  background-color: #d32f2f;
+}
+
+.admin-content {
+  margin-top: 40px;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.admin-content h2 {
+  color: #42b883;
+  margin-bottom: 15px;
+}
