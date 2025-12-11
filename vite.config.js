@@ -1,22 +1,28 @@
 // vite.config.js
+
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  // ⭐⭐⭐ 여기를 확인하고 수정합니다! ⭐⭐⭐
-  base: '/', // 이 부분을 'base: "/website/"' 가 아닌 '/' 또는 '' (빈 문자열)로 변경하세요.
+  // 1. GitHub Pages 배포를 위한 base 경로 설정
+  //    '/' 대신 프로젝트 레포지토리 이름을 base로 사용해야 합니다.
+  //    예: 'youngsungallery/website' 레포지토리라면 '/website/' 로 설정합니다.
+  base: '/website/', // ⭐⭐⭐ 이 부분을 이렇게 수정해주세요! ⭐⭐⭐
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': '/src', // @ 별칭 설정 (기존에 있을 겁니다)
+      '@': '/src',
     },
   },
   server: {
-    host: '0.0.0.0', // WSL2에서 접근 가능하도록 설정 (기존에 있을 겁니다)
-    port: 5173,      // 포트 설정
+    host: '0.0.0.0',
+    port: 5173,
     watch: {
-      usePolling: true, // HMR 문제 해결을 위한 폴링 (기존에 있을 겁니다)
+      usePolling: true,
     },
   },
+  // ⭐ (선택 사항: 만약 빌드 아웃풋 경로를 다르게 설정하고 싶다면) ⭐
+  // build: {
+  //   outDir: 'dist', // 빌드 아웃풋 폴더 이름 (기본값: 'dist')
+  // },
 })
