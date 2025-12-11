@@ -1,0 +1,18 @@
+/* src/admin/styles/SettingsView.scss */
+.admin-settings-view {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  font-family: 'NexonLv2Gothic', sans-serif;
+
+  h1 {
+    font-size: 1.8em;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  p {
+    font-size: 1em;
+    color: #555;
+  }
+}

@@ -1,0 +1,53 @@
+/* src/admin/styles/AdminHeader.scss */
+
+.admin-top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0; /* ⭐ 변경: 헤더 영역 자체의 패딩을 제거하여 배경을 끝까지 확장 */
+  background-color: #2c3e50; /* ⭐ 변경: 어두운 배경색으로 다시 설정 (dblibrery 스타일 참조) */
+  color: white; /* 텍스트 색상을 다시 흰색으로 */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 그림자 유지 (선택 사항) */
+  border-bottom: none; /* 하단 테두리 제거 */
+  font-family: 'NexonLv2Gothic', sans-serif;
+
+  // ⭐⭐⭐ 헤더 내부 콘텐츠에 좌우 여백 적용 ⭐⭐⭐
+  .header-left {
+    padding-left: 30px; /* 좌측 콘텐츠에 패딩 적용 */
+  }
+  .header-right {
+    padding-right: 30px; /* 우측 콘텐츠에 패딩 적용 */
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.6em;
+    font-weight: 700;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+
+    .user-info {
+      margin-right: 20px;
+      font-size: 0.95em;
+      color: #bbccdd; /* 밝은 회색 유지 */
+    }
+
+    .logout-button {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9em;
+      transition: background-color 0.3s ease;
+
+      &:hover {
+        background-color: #c0392b;
+      }
+    }
+  }
+}

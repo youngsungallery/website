@@ -1,7 +1,6 @@
 // src/router/index.js
 
-// ⭐⭐⭐ createWebHistory 대신 createWebHashHistory를 임포트합니다! ⭐⭐⭐
-import { createRouter, createWebHashHistory } from 'vue-router'; 
+import { createRouter, createWebHashHistory } from 'vue-router';
 import HomeView from '@/views/HomeView.vue';
 import { auth } from '@/plugins/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -24,17 +23,38 @@ const routes = [
   {
     path: '/admin',
     name: 'admin',
-    component: () => import('../admin/views/AdminView.vue'),
+    component: () => import('../admin/views/AdminLayout.vue'),
     meta: {
       requiresAuth: true,
     },
+    children: [
+      {
+        path: '', // /admin 경로 자체에 매핑 (대시보드)
+        name: 'admin-dashboard',
+        component: () => import('../admin/views/AdminView.vue'),
+      },
+      // ⭐⭐⭐ 새로 추가되는 라우트들 ⭐⭐⭐
+      {
+        path: 'exhibitions', // /admin/exhibitions
+        name: 'admin-exhibitions',
+        component: () => import('../admin/views/ExhibitionsView.vue'),
+      },
+      {
+        path: 'artworks', // /admin/artworks
+        name: 'admin-artworks',
+        component: () => import('../admin/views/ArtworksView.vue'),
+      },
+      {
+        path: 'settings', // /admin/settings
+        name: 'admin-settings',
+        component: () => import('../admin/views/SettingsView.vue'),
+      },
+    ],
   },
 ];
 
 const router = createRouter({
-  // ⭐⭐⭐ history: createWebHashHistory('/website/') 로 변경해주세요! ⭐⭐⭐
-  // GitHub Pages 배포 시 404 문제를 해결하기 위해 HashHistory 모드를 사용합니다.
-  history: createWebHashHistory('/website/'), 
+  history: createWebHashHistory('/website/'),
   routes,
 });
 

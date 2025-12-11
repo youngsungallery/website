@@ -1,78 +1,34 @@
-<!-- src/admin/views/AdminView.vue -->
+<!-- src/admin/views/AdminView.vue (실제 대시보드 콘텐츠) -->
 <template>
-  <div class="admin-view">
-    <div v-if="!isAuthReady">
-      <p>인증 상태 확인 중...</p>
-    </div>
-    <div v-else-if="isAuthenticated">
-      <h1>관리자 대시보드</h1>
-      <p>환영합니다, {{ userEmail }} 님!</p>
-      <button @click="handleLogout">로그아웃</button>
+  <div class="admin-dashboard-content">
+    <!-- 이 컴포넌트에는 관리자 대시보드의 실제 콘텐츠만 들어갑니다. -->
+    <!-- '영선갤러리 관리 대시보드' 제목, 로그인 이메일, 로그아웃 버튼은 AdminHeader에만 있습니다. -->
+    
+    <section class="dashboard-section">
+      <h2>전시 현황 요약</h2>
+      <p>가장 최근 업데이트된 전시: [전시명]</p>
+      <p>총 전시 수: N개</p>
+      <!-- 향후 동적 데이터로 채울 예정 -->
+    </section>
 
-      <!-- 관리자 기능 추가 예정 -->
-      <section class="admin-content">
-        <h2>전시 관리</h2>
-        <p>전시 데이터를 추가, 수정, 삭제할 수 있습니다.</p>
-        <!-- 여기에 전시 관리 컴포넌트를 추가할 예정 -->
-      </section>
+    <section class="dashboard-section">
+      <h2>빠른 메뉴</h2>
+      <div class="quick-links">
+        <button class="quick-button">전시 추가</button>
+        <button class="quick-button">강의 추가</button>
+        <button class="quick-button">설정 열기</button>
+      </div>
+    </section>
 
-      <section class="admin-content">
-        <h2>강의 관리</h2>
-        <p>강의 데이터를 추가, 수정, 삭제할 수 있습니다.</p>
-        <!-- 여기에 강의 관리 컴포넌트를 추가할 예정 -->
-      </section>
-
-      <!-- 기타 관리 기능들 -->
-
-    </div>
-    <div v-else>
-      <!-- 로그인되지 않은 경우 AdminLogin 컴포넌트를 표시 -->
-      <AdminLogin />
-    </div>
+    <!-- 기타 관리 기능들 -->
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { auth } from '@/plugins/firebase'; // Firebase auth 인스턴스 임포트
-import { onAuthStateChanged, signOut } from 'firebase/auth'; // 로그인 상태 변경 리스너와 로그아웃 함수 임포트
-
-import AdminLogin from '@/admin/components/AdminLogin.vue'; // AdminLogin 컴포넌트 임포트
-
-const router = useRouter();
-const isAuthenticated = ref(false); // 사용자 인증 상태
-const isAuthReady = ref(false);      // Firebase 인증 초기화 완료 상태
-const userEmail = ref('');           // 로그인한 사용자 이메일
-
-// Firebase 인증 상태 변경 리스너
-onMounted(() => {
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      isAuthenticated.value = true;
-      userEmail.value = user.email;
-      console.log("Firebase: 사용자 로그인됨 -", user.email);
-    } else {
-      isAuthenticated.value = false;
-      userEmail.value = '';
-      console.log("Firebase: 사용자 로그아웃됨");
-    }
-    isAuthReady.value = true; // 인증 상태 확인 완료
-  });
-});
-
-const handleLogout = async () => {
-  try {
-    await signOut(auth);
-    console.log("Firebase: 로그아웃 성공");
-    // 로그아웃 후 로그인 페이지 또는 홈으로 리디렉션 (AdminLogin은 AdminView가 알아서 처리)
-    router.push('/');
-  } catch (error) {
-    console.error("로그아웃 에러:", error);
-  }
-};
+// AdminHeader (AdminLayout에서 임포트)가 인증 상태 및 로그아웃을 처리하므로,
+// AdminView.vue에서는 Firebase 관련 스크립트가 필요 없습니다.
 </script>
 
 <style scoped lang="scss">
-@use '@/admin/styles/AdminView.scss'; /* <<-- 여기에 외부 SCSS 파일을 임포트합니다! */
+@use '@/admin/styles/AdminDashboardContent.scss'; // 스타일 파일 임포트는 그대로 유지
 </style>

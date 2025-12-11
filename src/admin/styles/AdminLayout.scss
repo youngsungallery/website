@@ -1,0 +1,61 @@
+/* src/admin/styles/AdminLayout.scss */
+
+.admin-layout-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #f5f7fa;
+  font-family: 'NexonLv2Gothic', sans-serif;
+  color: #333;
+}
+
+.loading-message {
+  width: 100%;
+  text-align: center;
+  padding-top: 50px;
+  font-size: 1.2em;
+  color: #666;
+}
+
+.admin-main-layout {
+  display: grid;
+  // ⭐⭐ 그리드 템플릿 컬럼과 영역 재조정: 헤더 영역 없음 (2열 1행) ⭐⭐
+  grid-template-columns: 250px 1fr; /* 사이드바 너비 + 콘텐츠 영역 */
+  grid-template-rows: 1fr;         /* 상단 헤더 없이 한 줄로만 구성 */
+  grid-template-areas: "sidebar main";
+  width: 100%;
+  min-height: 100vh;
+}
+
+// ⭐⭐ AdminLayout.vue의 메인 영역에 넣었던 헤더처럼 보이던 스타일 제거 ⭐⭐
+// .admin-content-header 관련 스타일은 더 이상 필요 없습니다.
+
+
+.admin-sidebar { /* AdminSidebar 컴포넌트의 클래스명 */
+  grid-area: sidebar;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.admin-content-area {
+  grid-area: main;
+  padding: 30px; /* ⭐ 메인 콘텐츠 영역 자체의 여백 (dblibrery처럼) */
+  background-color: #ecf0f1; /* 메인 콘텐츠 영역 배경 */
+  width: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  height: 100vh; // ⭐⭐ 전체 뷰포트 높이 사용 ⭐⭐
+
+  display: flex;
+  flex-direction: column; // 내부에 콘텐츠를 세로로 배치
+}
+
+.admin-login-area {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}

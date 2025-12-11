@@ -1,0 +1,53 @@
+/* src/admin/styles/AdminSidebar.scss */
+
+.admin-sidebar {
+  width: 250px;
+  background-color: #34495e;
+  color: white;
+  padding: 20px 0;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  font-family: 'NexonLv2Gothic', sans-serif;
+
+  .sidebar-logo {
+    text-align: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 20px;
+
+    .logo-image {
+      max-width: 80px;
+      margin-bottom: 10px;
+    }
+    .logo-text {
+      font-size: 1.2em;
+      font-weight: 700;
+      color: #ecf0f1;
+    }
+  }
+
+  .sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+      margin-bottom: 5px;
+
+      a {
+        display: block;
+        padding: 12px 20px;
+        color: #ecf0f1;
+        text-decoration: none;
+        transition: background-color 0.3s ease, color 0.3s ease;
+
+        // ⭐⭐⭐ :hover와 &.router-link-exact-active 부분에 스타일 적용 ⭐⭐⭐
+        &:hover, &.router-link-exact-active { /* exact-active-class에 맞게 수정 */
+          background-color: #42b883; /* Vue 초록색 계열 */
+          color: white;
+        }
+      }
+    }
+  }
+}

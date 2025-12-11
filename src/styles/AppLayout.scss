@@ -1,12 +1,75 @@
-/* App.vue의 전역 레이아웃 스타일 (src/styles/AppLayout.scss) */
+/* src/styles/AppLayout.scss */
+
+// ⭐⭐⭐ 모든 요소에 box-sizing: border-box 적용 및 가로 스크롤 방지 ⭐⭐⭐
+html, body {
+  box-sizing: border-box; // 모든 요소의 너비 계산 시 패딩/보더 포함
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; // ⭐ 가로 스크롤바 제거
+}
+
+// 모든 요소가 box-sizing을 상속받도록 설정
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+
+// NEXON Lv2 Gothic 폰트 등록
+// 폰트 파일명과 format() 값은 정민님의 파일에 맞게 정확히 수정해야 합니다.
+// .otf 파일이면 format('opentype'), .ttf 파일이면 format('truetype') 입니다.
+// ⭐ 중요: 폰트 파일명을 "NEXON-Lv2-Gothic-Light.otf"처럼 띄어쓰기 없이 변경한 경우입니다.
+
+// 라이트 굵기 폰트
+@font-face {
+    font-family: 'NexonLv2Gothic';
+    src: url('/fonts/NEXON-Lv2-Gothic-Light.otf') format('opentype');
+    font-weight: 300; // Light 굵기에 해당하는 값
+    font-style: normal;
+    font-display: swap;
+}
+
+// 미디움 굵기 폰트 (기본)
+@font-face {
+    font-family: 'NexonLv2Gothic';
+    src: url('/fonts/NEXON-Lv2-Gothic-Medium.otf') format('opentype');
+    font-weight: 500; // Medium 굵기에 해당하는 값
+    font-style: normal;
+    font-display: swap;
+}
+
+// 볼드 굵기 폰트
+@font-face {
+    font-family: 'NexonLv2Gothic';
+    src: url('/fonts/NEXON-Lv2-Gothic-Bold.otf') format('opentype');
+    font-weight: 700; // Bold 굵기에 해당하는 값
+    font-style: normal;
+    font-display: swap;
+}
+
+// 전역 폰트 설정
+body {
+  font-family: 'NexonLv2Gothic', sans-serif; // 넥슨고딕이 로드 안될 경우 대비
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #333;
+  line-height: 1.6;
+}
+
+// ⭐⭐⭐ 최상위 #app 요소에 대한 스타일 설정 ⭐⭐⭐
+// Vue 프로젝트에서 App.vue가 마운트되는 기본 요소입니다.
+#app {
+  width: 100%;       // 부모(body)의 100% 너비 사용
+  max-width: 100%;   // 최대 너비를 100%로 지정하여 제한 해제
+  margin: 0;         // 혹시 모를 중앙 정렬 마진 제거
+  min-height: 100vh; // 앱의 최소 높이를 뷰포트 높이로 설정
+  display: flex;     // 자식 요소들을 flexbox로 관리
+  flex-direction: column; // 자식 요소들을 세로 방향으로 배치
+}
+
+// #app-container는 App.vue의 최상위 div로 사용됩니다.
 #app-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh; /* 뷰포트 높이만큼 최소 높이 설정 */
+  min-height: 100vh;
+  width: 100%; // ⭐ 부모인 #app의 100% 너비 사용
 }
-
-/* .router-view-container 클래스는 현재 App.vue 템플릿에 없으므로 나중에 사용할 경우에 대비 */
-/* 현재 <router-view />에 직접 스타일을 적용하지 않으므로 이 셀렉터는 당장은 필요없습니다. */
-/* .router-view-container {
-  flex-grow: 1;
-} */

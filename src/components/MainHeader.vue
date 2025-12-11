@@ -1,4 +1,4 @@
-<!-- src/components/TheHeader.vue -->
+<!-- src/components/MainHeader.vue -->
 <template>
   <header class="app-header">
     <h1>영선갤러리</h1>
@@ -12,9 +12,10 @@
 </template>
 
 <script setup>
-// Header 컴포넌트에 필요한 스크립트 로직 (현재는 비어 있음)
+// 기존 isAdminRoute 관련 로직 모두 제거
+// computed, useRoute 임포트 제거
 </script>
 
 <style scoped lang="scss">
-@use '@/styles/TheHeader.scss'; /* <<-- 여기에서 외부 SCSS 파일을 임포트합니다! */
+@use '@/styles/MainHeader.scss'; /* ⭐⭐⭐ 스타일 파일 이름을 MainHeader.scss로 변경 ⭐⭐⭐ */
 </style>
