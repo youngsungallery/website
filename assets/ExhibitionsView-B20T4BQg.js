@@ -1,0 +1,1 @@
+import{_ as t,c as o,a as s,o as i}from"./index-C_ctFQpo.js";const a={class:"admin-exhibitions-view"},n={__name:"ExhibitionsView",setup(_){return(c,e)=>(i(),o("div",a,[...e[0]||(e[0]=[s("h1",null,"전시 관리",-1),s("p",null,"이곳에서 전시를 추가, 수정, 삭제할 수 있습니다.",-1)])]))}},l=t(n,[["__scopeId","data-v-fb7d2839"]]);export{l as default};
