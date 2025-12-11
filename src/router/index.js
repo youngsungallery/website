@@ -1,6 +1,7 @@
 // src/router/index.js
 
-import { createRouter, createWebHistory } from 'vue-router';
+// ⭐⭐⭐ createWebHistory 대신 createWebHashHistory를 임포트합니다! ⭐⭐⭐
+import { createRouter, createWebHashHistory } from 'vue-router'; 
 import HomeView from '@/views/HomeView.vue';
 import { auth } from '@/plugins/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -31,10 +32,9 @@ const routes = [
 ];
 
 const router = createRouter({
-  // ⭐⭐⭐ 이 부분을 이렇게 수정해주세요! ⭐⭐⭐
-  history: createWebHistory('/website/'),
-  // 만약 위 설정으로도 문제가 발생하거나 URL에 '#'이 포함되는 것이 괜찮다면,
-  // history: createWebHashHistory(), 이 방안도 고려할 수 있습니다.
+  // ⭐⭐⭐ history: createWebHashHistory('/website/') 로 변경해주세요! ⭐⭐⭐
+  // GitHub Pages 배포 시 404 문제를 해결하기 위해 HashHistory 모드를 사용합니다.
+  history: createWebHashHistory('/website/'), 
   routes,
 });
 
