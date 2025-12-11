@@ -1,7 +1,10 @@
 // src/router/index.js
 
 import { createRouter, createWebHashHistory } from 'vue-router';
-import HomeView from '@/views/HomeView.vue';
+// import HomeView from '@/views/HomeView.vue'; // ⭐⭐⭐ 더 이상 App.vue에서 직접 렌더링되지 않으므로 임포트 경로가 달라집니다. ⭐⭐⭐
+// ⭐⭐⭐ MainLayout 컴포넌트 임포트 (아래 새로 만들 예정) ⭐⭐⭐
+import MainLayout from '@/views/MainLayout.vue'; 
+
 import { auth } from '@/plugins/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -16,9 +19,18 @@ const getCurrentUser = () => {
 
 const routes = [
   {
+    // ⭐⭐⭐ / 경로를 MainLayout으로 변경하고 HomeView를 자식으로 추가합니다. ⭐⭐⭐
     path: '/',
-    name: 'home',
-    component: HomeView,
+    // name: 'home', // MainLayout이 최상위이므로 name은 MainLayout의 자식 라우트에 부여
+    component: MainLayout, // HomeView 대신 MainLayout을 렌더링
+    children: [
+      {
+        path: '', // '/' 경로 자체에 매핑
+        name: 'home', // HomeView는 이제 MainLayout의 자식 라우트입니다.
+        component: () => import('../views/HomeView.vue'), // ⭐⭐⭐ HomeView 임포트는 그대로 유지 ⭐⭐⭐
+      },
+      // 다른 본 사이트 페이지들도 여기에 자식 라우트로 추가할 수 있습니다.
+    ]
   },
   {
     path: '/admin',
@@ -33,7 +45,6 @@ const routes = [
         name: 'admin-dashboard',
         component: () => import('../admin/views/AdminView.vue'),
       },
-      // ⭐⭐⭐ 새로 추가되는 라우트들 ⭐⭐⭐
       {
         path: 'exhibitions', // /admin/exhibitions
         name: 'admin-exhibitions',
@@ -54,7 +65,7 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHashHistory('/website/'),
+  history: createWebHashHistory(), // 이 부분은 그대로 유지
   routes,
 });
 

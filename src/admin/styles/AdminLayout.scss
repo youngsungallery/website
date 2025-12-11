@@ -19,24 +19,28 @@
 
 .admin-main-layout {
   display: grid;
-  // ⭐⭐ 그리드 템플릿 컬럼과 영역 재조정: 헤더 영역 없음 (2열 1행) ⭐⭐
+  // ⭐⭐⭐ 그리드 템플릿 컬럼과 영역 재조정 (다시 3단 레이아웃으로) ⭐⭐⭐
   grid-template-columns: 250px 1fr; /* 사이드바 너비 + 콘텐츠 영역 */
-  grid-template-rows: 1fr;         /* 상단 헤더 없이 한 줄로만 구성 */
-  grid-template-areas: "sidebar main";
+  grid-template-rows: auto 1fr;     /* 헤더 높이 + 콘텐츠 영역 */
+  grid-template-areas:
+    "header header"  /* ⭐⭐ 상단 헤더가 전체 너비를 차지 ⭐⭐ */
+    "sidebar main";  /* ⭐⭐ 그 아래에 사이드바와 메인 콘텐츠 ⭐⭐ */
   width: 100%;
   min-height: 100vh;
 }
 
-// ⭐⭐ AdminLayout.vue의 메인 영역에 넣었던 헤더처럼 보이던 스타일 제거 ⭐⭐
-// .admin-content-header 관련 스타일은 더 이상 필요 없습니다.
-
+// ⭐⭐ AdminLayout.vue의 메인 영역에 넣었던 임시 헤더 관련 스타일들은 모두 제거 (이제 AdminHeader가 담당) ⭐⭐
 
 .admin-sidebar { /* AdminSidebar 컴포넌트의 클래스명 */
   grid-area: sidebar;
   position: sticky;
   top: 0;
-  height: 100vh;
+  // ⭐⭐⭐ 이 부분을 다시 추가합니다! ⭐⭐⭐
+  height: calc(100vh - var(--admin-header-height, 70px)); // ⭐⭐ 헤더 높이를 제외한 나머지 공간을 채움 ⭐⭐
   overflow-y: auto;
+  min-width: 0; 
+  background-color: #34495e; /* ⭐⭐ 사이드바 배경색 (이전 dblibrery 스타일 참고) ⭐⭐ */
+  z-index: 999; /* ⭐⭐ 필요시 추가: 헤더보다 낮지만 콘텐츠보다 높게 ⭐⭐ */
 }
 
 .admin-content-area {
@@ -46,10 +50,8 @@
   width: 100%;
   box-sizing: border-box;
   overflow-y: auto;
-  height: 100vh; // ⭐⭐ 전체 뷰포트 높이 사용 ⭐⭐
-
-  display: flex;
-  flex-direction: column; // 내부에 콘텐츠를 세로로 배치
+  height: calc(100vh - var(--admin-header-height, 70px)); // ⭐⭐ 헤더 높이를 제외한 나머지 공간 ⭐⭐
+  min-width: 0; 
 }
 
 .admin-login-area {

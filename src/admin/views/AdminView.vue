@@ -1,8 +1,8 @@
-<!-- src/admin/views/AdminView.vue (실제 대시보드 콘텐츠) -->
+<!-- src/admin/views/AdminView.vue (순수 대시보드 콘텐츠) -->
 <template>
   <div class="admin-dashboard-content">
-    <!-- 이 컴포넌트에는 관리자 대시보드의 실제 콘텐츠만 들어갑니다. -->
-    <!-- '영선갤러리 관리 대시보드' 제목, 로그인 이메일, 로그아웃 버튼은 AdminHeader에만 있습니다. -->
+    <!-- ⭐⭐⭐ 다시 추가했던 dashboard-header-area 내용을 여기서 모두 제거합니다! ⭐⭐⭐ -->
+    <!-- AdminHeader에서 제목과 로그인 정보를 처리합니다. -->
     
     <section class="dashboard-section">
       <h2>전시 현황 요약</h2>
@@ -25,10 +25,10 @@
 </template>
 
 <script setup>
-// AdminHeader (AdminLayout에서 임포트)가 인증 상태 및 로그아웃을 처리하므로,
-// AdminView.vue에서는 Firebase 관련 스크립트가 필요 없습니다.
+// ⭐⭐⭐ Firebase 인증 관련 스크립트 로직을 모두 제거합니다! ⭐⭐⭐
+// AdminHeader에서 로그인 및 로그아웃 관련 로직을 담당합니다.
 </script>
 
 <style scoped lang="scss">
-@use '@/admin/styles/AdminDashboardContent.scss'; // 스타일 파일 임포트는 그대로 유지
+@use '@/admin/styles/AdminDashboardContent.scss';
 </style>

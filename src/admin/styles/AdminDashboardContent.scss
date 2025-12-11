@@ -1,14 +1,18 @@
 /* src/admin/styles/AdminDashboardContent.scss */
 
+// AdminView.vue의 최상위 컨테이너 스타일 (실제 대시보드 콘텐츠 영역)
 .admin-dashboard-content {
-  background-color: #ffffff;
-  padding: 30px; /* ⭐ 다시 추가: 콘텐츠 자체에 내부 여백 */
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: none;
-  box-sizing: border-box;
-  font-family: 'NexonLv2Gothic', sans-serif;
+  background-color: #ffffff; /* 하얀 배경 */
+  padding: 30px; /* ⭐ 대시보드 콘텐츠 자체에 내부 여백 ⭐ */
+  border-radius: 8px; /* 모서리 둥글게 */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 은은한 그림자 */
+  width: 100%; /* 부모 요소의 전체 너비 */
+  max-width: none; /* 최대 너비 제한 없음 */
+  box-sizing: border-box; /* 패딩이 너비에 포함되도록 */
+  font-family: 'NexonLv2Gothic', sans-serif; /* 넥슨고딕 적용 */
+
+  // ⭐⭐⭐ 이전에 AdminView.vue에 넣었던 dashboard-header-area 관련 스타일은 여기서도 제거됩니다. ⭐⭐⭐
+  // 이 스타일은 AdminHeader.scss로 옮겨집니다.
 
   h1 {
     font-size: 2em;

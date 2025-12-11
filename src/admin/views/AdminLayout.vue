@@ -5,10 +5,11 @@
       <p class="loading-message">인증 상태 확인 중...</p>
     </div>
     <div v-else-if="isAuthenticated" class="admin-main-layout">
+      <!-- ⭐⭐⭐ 상단에 AdminHeader 컴포넌트를 다시 포함 ⭐⭐⭐ -->
+      <AdminHeader /> 
       <AdminSidebar />
       <main class="admin-content-area">
-        <!-- ⭐⭐⭐ 메인 영역에 있던 헤더처럼 보이던 내용 (admin-content-header div)을 완전히 제거합니다. ⭐⭐⭐ -->
-        <router-view /> <!-- 실제 대시보드 콘텐츠(AdminView)만 여기에 표시됩니다. -->
+        <router-view />
       </main>
     </div>
     <div v-else class="admin-login-area">
@@ -19,27 +20,29 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router'; // 로그아웃을 위해 필요
 import { auth } from '@/plugins/firebase';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 
-// AdminLayout에서 인증 상태만 관리하고, userEmail과 handleLogout 로직은 필요 없다면 삭제
-const router = useRouter();
+// AdminHeader, AdminSidebar, AdminLogin 컴포넌트를 다시 임포트
+import AdminHeader from '@/admin/components/AdminHeader.vue'; // ⭐⭐ AdminHeader 다시 임포트 ⭐⭐
+import AdminSidebar from '@/admin/components/AdminSidebar.vue';
+import AdminLogin from '@/admin/components/AdminLogin.vue';
+
 const isAuthenticated = ref(false);
 const isAuthReady = ref(false);
-// const userEmail = ref(''); // 더 이상 AdminLayout에서 표시하지 않는다면 제거
-// const handleLogout = async () => { /* ... */ }; // 더 이상 AdminLayout에서 표시하지 않는다면 제거
+// userEmail, handleLogout 로직은 AdminHeader로 다시 옮겨집니다.
 
 onMounted(() => {
   onAuthStateChanged(auth, (user) => {
+    console.log("AdminLayout onAuthStateChanged: user =", user);
     isAuthenticated.value = !!user;
-    // userEmail.value = user ? user.email : ''; // 제거한다면
     isAuthReady.value = true;
+    console.log("AdminLayout isAuthenticated:", isAuthenticated.value);
   });
 });
 
-import AdminSidebar from '@/admin/components/AdminSidebar.vue';
-import AdminLogin from '@/admin/components/AdminLogin.vue';
+// AdminLayout은 인증 상태만 관리하고, 실제 로그아웃 액션은 AdminHeader에서 일어남.
+// 따라서 AdminLayout에서는 handleLogout 로직을 제거.
 </script>
 
 <style scoped lang="scss">

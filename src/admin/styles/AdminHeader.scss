@@ -4,50 +4,45 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0; /* ⭐ 변경: 헤더 영역 자체의 패딩을 제거하여 배경을 끝까지 확장 */
-  background-color: #2c3e50; /* ⭐ 변경: 어두운 배경색으로 다시 설정 (dblibrery 스타일 참조) */
-  color: white; /* 텍스트 색상을 다시 흰색으로 */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 그림자 유지 (선택 사항) */
-  border-bottom: none; /* 하단 테두리 제거 */
+  padding: 15px 30px; /* ⭐⭐ 적절한 패딩 ⭐⭐ */
+  background-color: #2c3e50; /* ⭐⭐ 어두운 배경색 (dblibrery 상단바와 유사하게) ⭐⭐ */
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   font-family: 'NexonLv2Gothic', sans-serif;
+  grid-area: header; // ⭐⭐ AdminLayout 그리드의 header 영역에 할당 ⭐⭐
+  height: var(--admin-header-height, 70px); // ⭐⭐ CSS 변수로 헤더의 높이 정의 ⭐⭐
+  flex-shrink: 0; // 내용이 많아져도 헤더의 높이가 줄어들지 않도록
+  z-index: 1000; // 다른 콘텐츠 위에 나타나도록
+}
 
-  // ⭐⭐⭐ 헤더 내부 콘텐츠에 좌우 여백 적용 ⭐⭐⭐
-  .header-left {
-    padding-left: 30px; /* 좌측 콘텐츠에 패딩 적용 */
+.admin-top-header .header-left h1 {
+  margin: 0;
+  font-size: 1.6em;
+  font-weight: 700;
+}
+
+.admin-top-header .header-right {
+  display: flex;
+  align-items: center;
+
+  .user-info {
+    margin-right: 20px;
+    font-size: 0.95em;
+    color: #bbccdd;
   }
-  .header-right {
-    padding-right: 30px; /* 우측 콘텐츠에 패딩 적용 */
-  }
 
-  h1 {
-    margin: 0;
-    font-size: 1.6em;
-    font-weight: 700;
-  }
+  .logout-button {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease;
 
-  .header-right {
-    display: flex;
-    align-items: center;
-
-    .user-info {
-      margin-right: 20px;
-      font-size: 0.95em;
-      color: #bbccdd; /* 밝은 회색 유지 */
-    }
-
-    .logout-button {
-      background-color: #e74c3c;
-      color: white;
-      border: none;
-      padding: 8px 15px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 0.9em;
-      transition: background-color 0.3s ease;
-
-      &:hover {
-        background-color: #c0392b;
-      }
+    &:hover {
+      background-color: #c0392b;
     }
   }
 }
