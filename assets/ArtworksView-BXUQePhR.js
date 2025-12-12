@@ -1,1 +1,0 @@
-import{_ as t,c as o,a as s,o as r}from"./index-CS1TXy-1.js";const a={class:"admin-artworks-view"},_={__name:"ArtworksView",setup(c){return(n,e)=>(r(),o("div",a,[...e[0]||(e[0]=[s("h1",null,"작품 관리",-1),s("p",null,"이곳에서 작품 정보를 추가, 수정, 삭제할 수 있습니다.",-1)])]))}},p=t(_,[["__scopeId","data-v-ec8b7d87"]]);export{p as default};
