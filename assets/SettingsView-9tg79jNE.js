@@ -1,0 +1,1 @@
+import{_ as s,c as a,a as t,o as n}from"./index-CS1TXy-1.js";const o={class:"admin-settings-view"},_={__name:"SettingsView",setup(c){return(i,e)=>(n(),a("div",o,[...e[0]||(e[0]=[t("h1",null,"설정",-1),t("p",null,"이곳에서 관리자 설정 및 웹사이트 설정을 변경할 수 있습니다.",-1)])]))}},l=s(_,[["__scopeId","data-v-fc7bfa72"]]);export{l as default};
