@@ -156,7 +156,11 @@ const getActualIndex = (exhibitionItem) => {
 
 onMounted(async () => {
   try {
-    const response = await fetch('/data/exhibitions.json');
+    // ⭐⭐⭐ 이 부분을 수정합니다! ⭐⭐⭐
+    // import.meta.env.BASE_URL은 vite.config.js의 base 경로 값을 가져옵니다.
+    // GitHub Pages 배포 시 '/website/'가 되므로, 요청은 '/website/data/exhibitions.json'이 됩니다.
+    const response = await fetch(`${import.meta.env.BASE_URL}data/exhibitions.json`); 
+    
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`HTTP error! status: ${response.status}. Response: ${errorText}`);
