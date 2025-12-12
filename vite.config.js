@@ -4,10 +4,10 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
-  // 1. GitHub Pages 배포를 위한 base 경로 설정
-  //    '/' 대신 프로젝트 레포지토리 이름을 base로 사용해야 합니다.
-  //    예: 'youngsungallery/website' 레포지토리라면 '/website/' 로 설정합니다.
-  base: '/website/', // ⭐⭐⭐ 이 부분을 이렇게 수정해주세요! ⭐⭐⭐
+  // ⭐⭐⭐ 1. GitHub Pages 배포를 위한 base 경로를 조건부로 설정 ⭐⭐⭐
+  // 로컬 개발 시에는 '/' (루트), GitHub Pages 배포 시에만 '/website/' 사용
+  base: process.env.NODE_ENV === 'production' ? '/website/' : '/',
+  
   plugins: [vue()],
   resolve: {
     alias: {
