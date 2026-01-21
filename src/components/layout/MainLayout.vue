@@ -5,8 +5,8 @@
       <h1 class="logo">영선갤러리</h1>
     </header>
 
-    <main>
-      <slot /> <!-- 페이지 내용은 여기로 -->
+    <main class="site-main">
+      <slot />
     </main>
 
     <footer class="site-footer">
@@ -16,14 +16,13 @@
 </template>
 
 <script setup>
-// 레이아웃 전용
 </script>
 
 <style scoped>
 .layout {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
 }
 
 .site-header {
@@ -33,11 +32,15 @@
 
 .logo {
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.site-main {
+  flex: 1;
 }
 
 .site-footer {
-  margin-top: auto;
   padding: 40px 20px;
   text-align: center;
   font-size: 12px;

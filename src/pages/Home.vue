@@ -1,13 +1,15 @@
 <!-- src/pages/Home.vue -->
 <template>
   <MainLayout>
-    <section class="current-exhibition">
-      <div class="poster-wrap"></div>
+    <section class="home">
+      <section class="current-exhibition">
+        <div class="poster-wrap"></div>
 
-      <div class="exhibition-info">
-        <h1 class="title"></h1>
-        <p class="period"></p>
-      </div>
+        <div class="exhibition-info">
+          <h1 class="title"></h1>
+          <p class="period"></p>
+        </div>
+      </section>
     </section>
   </MainLayout>
 </template>
@@ -17,10 +19,15 @@ import MainLayout from '@/components/layout/MainLayout.vue'
 </script>
 
 <style scoped>
+.home {
+  display: flex;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
 .current-exhibition {
   max-width: 640px;
   width: 100%;
-  margin: 60px auto;
   text-align: center;
 }
 

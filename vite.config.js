@@ -1,14 +1,13 @@
-// src/vite.config.js
+// vite.config.js
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
-export default defineConfig(({ command, mode }) => {
-  // GH Pages 배포 시만 base 경로 변경
-  const base =
-    command === 'build' && process.env.DEPLOY_ENV === 'GH_PAGES'
-      ? '/website/'   // GitHub Pages repository 이름으로 변경
-      : '/'
+export default defineConfig(({ command }) => {
+  // 로컬(dev): /
+  // GH Pages 배포(build + ENV): /website/
+  const isGhPagesBuild = command === 'build' && process.env.DEPLOY_ENV === 'GH_PAGES'
+  const base = isGhPagesBuild ? '/website/' : '/'
 
   return {
     plugins: [vue()],
@@ -21,6 +20,7 @@ export default defineConfig(({ command, mode }) => {
 
     base,
 
+    // 로컬 HMR 안정화(WSL + /mnt/*)
     server: {
       host: '0.0.0.0',
       port: 5173,
