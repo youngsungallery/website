@@ -2,7 +2,7 @@ name: Publish Firestore to public/data (Daily)
 
 on:
   schedule:
-    - cron: "0 15 * * *" # KST 00:00
+    - cron: "40 16 * * *" # KST 00:00
   workflow_dispatch: {}
 
 permissions:
