@@ -1,12 +1,19 @@
 // src/router/index.js
-import { createRouter, createWebHistory } from 'vue-router'
-import Home from '../pages/Home.vue'
+import { createRouter, createWebHistory } from "vue-router";
+
+import HomePage from "@/pages/HomePage.vue";
+import ExhibitionsPage from "@/pages/ExhibitionsPage.vue";
+import WorksPage from "@/pages/WorksPage.vue";
+// Admin은 추후 연결
+
+const routes = [
+  { path: "/", component: HomePage },
+  { path: "/exhibitions", component: ExhibitionsPage },
+  { path: "/works", component: WorksPage },
+  { path: "/admin", component: () => import("@/pages/AdminPage.vue") }, // 추후
+];
 
 export default createRouter({
-  // ✅ Vite의 base(/ 또는 /website/)를 그대로 Router에 전달
-  history: createWebHistory(import.meta.env.BASE_URL),
-
-  routes: [
-    { path: '/', name: 'Home', component: Home },
-  ],
-})
+  history: createWebHistory(),
+  routes,
+});
