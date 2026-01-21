@@ -1,0 +1,51 @@
+name: Publish Firestore to public/data (Daily)
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # KST 00:00
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "publish-firestore"
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run publish (export + clear)
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scripts/publish-firestore-to-public.mjs
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name "youngsun-publish-bot"
+          git config user.email "youngsun-publish-bot@users.noreply.github.com"
+
+          git add public/data/*.json
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(data): publish firestore to public/data"
+          git push
