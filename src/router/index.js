@@ -6,11 +6,34 @@ import HomePage from "@/pages/HomePage.vue";
 import AdminPage from "@/pages/AdminPage.vue";
 import AdminLoginPage from "@/pages/admin/AdminLoginPage.vue";
 
+import AdminExhibitionsPage from "@/pages/admin/AdminExhibitionsPage.vue";
+import AdminWorksPage from "@/pages/admin/AdminWorksPage.vue";
+import AdminInquiriesPage from "@/pages/admin/AdminInquiriesPage.vue";
+
 const routes = [
   { path: "/", component: HomePage },
 
   { path: "/admin/login", component: AdminLoginPage },
+
+  // 관리자 메인(카드 메뉴)
   { path: "/admin", component: AdminPage, meta: { requiresAdmin: true } },
+
+  // 관리자 하위 메뉴 페이지들
+  {
+    path: "/admin/exhibitions",
+    component: AdminExhibitionsPage,
+    meta: { requiresAdmin: true },
+  },
+  {
+    path: "/admin/works",
+    component: AdminWorksPage,
+    meta: { requiresAdmin: true },
+  },
+  {
+    path: "/admin/inquiries",
+    component: AdminInquiriesPage,
+    meta: { requiresAdmin: true },
+  },
 ];
 
 const router = createRouter({

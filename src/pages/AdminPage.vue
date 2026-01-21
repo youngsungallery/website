@@ -9,20 +9,20 @@
     </header>
 
     <section class="admin-content">
-      <div class="admin-card">
+      <RouterLink to="/admin/exhibitions" class="admin-card">
         <h3 class="card-title">전시 관리</h3>
-        <p class="card-desc">전시 등록 및 수정 (추후 연결)</p>
-      </div>
+        <p class="card-desc">전시 등록 및 수정</p>
+      </RouterLink>
 
-      <div class="admin-card">
+      <RouterLink to="/admin/works" class="admin-card">
         <h3 class="card-title">작품 관리</h3>
-        <p class="card-desc">작품 등록 및 상태 관리 (추후 연결)</p>
-      </div>
+        <p class="card-desc">작품 등록 및 상태 관리</p>
+      </RouterLink>
 
-      <div class="admin-card">
+      <RouterLink to="/admin/inquiries" class="admin-card">
         <h3 class="card-title">문의 관리</h3>
-        <p class="card-desc">구입 문의 확인 및 답변 (추후 연결)</p>
-      </div>
+        <p class="card-desc">구입 문의 확인 및 답변</p>
+      </RouterLink>
     </section>
   </section>
 </template>
@@ -54,10 +54,21 @@
   gap: 24px;
 }
 
+/* 카드 = 링크 */
 .admin-card {
+  display: block;
   border: 1px solid rgba(0, 0, 0, 0.08);
   padding: 20px;
   border-radius: 4px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.admin-card:hover {
+  border-color: rgba(0, 0, 0, 0.14);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
 }
 
 .card-title {
