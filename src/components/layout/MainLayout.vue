@@ -1,4 +1,3 @@
-<!-- src/components/layout/MainLayout.vue -->
 <template>
   <div class="layout-root">
     <header class="site-header">
@@ -18,11 +17,13 @@
       </div>
     </main>
 
-    <footer class="site-footer">
-      <p class="footer-text">© Youngsun Gallery</p>
-    </footer>
+    <SiteFooter />
   </div>
 </template>
+
+<script setup>
+import SiteFooter from "@/components/layout/SiteFooter.vue";
+</script>
 
 <style scoped>
 /* ===============================
@@ -105,21 +106,5 @@
   max-width: 1320px;
   margin: 0 auto;
   padding: 36px 20px 96px;
-}
-
-/* ===============================
-   Footer
-=============================== */
-.site-footer {
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  padding: 32px 20px;
-  text-align: center;
-}
-
-.footer-text {
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  color: #888;
-  margin: 0;
 }
 </style>
