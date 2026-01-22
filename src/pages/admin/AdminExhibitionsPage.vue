@@ -298,9 +298,39 @@
             />
           </div>
 
+          <!-- ✅ 페이지 정보 + 페이지 이동 -->
+          <div class="pager">
+            <div class="pager-left">
+              <span class="pager-text">
+                총 <b>{{ totalItems }}</b>개 ·
+                <b>{{ page }}</b>/<b>{{ totalPages }}</b> 페이지 ·
+                페이지당 <b>{{ pageSize }}</b>개
+              </span>
+            </div>
+
+            <div class="pager-right">
+              <button type="button" class="pbtn" :disabled="page <= 1" @click="goFirst">처음</button>
+              <button type="button" class="pbtn" :disabled="page <= 1" @click="goPrev">이전</button>
+
+              <button
+                v-for="p in pageButtons"
+                :key="p"
+                type="button"
+                class="pbtn num"
+                :class="{ active: p === page }"
+                @click="goPage(p)"
+              >
+                {{ p }}
+              </button>
+
+              <button type="button" class="pbtn" :disabled="page >= totalPages" @click="goNext">다음</button>
+              <button type="button" class="pbtn" :disabled="page >= totalPages" @click="goLast">끝</button>
+            </div>
+          </div>
+
           <div class="list">
             <button
-              v-for="item in filteredCards"
+              v-for="item in pagedCards"
               :key="item.key"
               type="button"
               class="list-item row"
@@ -328,7 +358,7 @@
               </div>
             </button>
 
-            <div v-if="!loading && filteredCards.length === 0" class="empty">
+            <div v-if="!loading && pagedCards.length === 0" class="empty">
               데이터가 없습니다.
             </div>
             <div v-if="loading" class="empty">불러오는 중...</div>
@@ -351,7 +381,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { reactive, ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import {
   collection,
   doc,
@@ -366,14 +396,6 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
-/**
- * 목표 동작(요청 반영)
- * 1) 전시폼만 작성 → 전시 카드만 표시
- * 2) 전시+특강 작성(전시폼 내) → 전시 카드 + 특강 카드 표시
- * 3) 특강만 표시 → 특강 전용 폼에서만 작성(전시와 연결 안 함)
- * 4) 전시 카드 클릭 시 전시가 메인(특강으로 "넘어가지" 않음)
- */
 
 const mode = ref("exhibition"); // 'exhibition' | 'lecture'
 const filterTab = ref("all"); // 'all' | 'exhibition' | 'lecture'
@@ -390,7 +412,10 @@ const selectedKey = ref(""); // 카드 키(타입+id)
 const selectedType = ref(""); // 'exhibition' | 'lecture'
 const selectedId = ref(""); // 해당 타입의 id
 
-// ✅ 전시 폼
+// ✅ 페이지링
+const pageSize = 20;
+const page = ref(1);
+
 const exForm = reactive({
   title: "",
   artistName: "",
@@ -402,7 +427,6 @@ const exForm = reactive({
   lectureId: "",
 });
 
-// ✅ 전시 안에 포함되는 특강 폼(연결형)
 const lecInEx = reactive({
   title: "",
   instructor: "",
@@ -411,7 +435,6 @@ const lecInEx = reactive({
   imageUrl: "",
 });
 
-// ✅ 특강 전용 폼(단독형)
 const lecOnly = reactive({
   title: "",
   instructor: "",
@@ -474,7 +497,6 @@ function toMillisMaybe(v) {
   const ms = d.getTime();
   return Number.isNaN(ms) ? 0 : ms;
 }
-
 function formatLectureText(lec) {
   const d = lec?.dateTime ? tsToDateInput(lec.dateTime) : "";
   const t = lec?.dateTime ? tsToTimeInput(lec.dateTime) : "";
@@ -500,9 +522,7 @@ async function loadLatestJson() {
 
     base.value.exhibitions = ex.filter((x) => x && !x.deleted);
     base.value.lectures = le.filter((x) => x && !x.deleted);
-  } catch {
-    // 실패해도 Firestore 오버레이로 운영 가능
-  }
+  } catch {}
 }
 
 /** Firestore 오버레이 */
@@ -582,17 +602,11 @@ const mergedExhibitions = computed(() => {
     .sort((a, b) => exhibitionSortKey(b) - exhibitionSortKey(a));
 });
 
-/** ✅ 카드 목록 생성 규칙
- * - 전시: 항상 전시 카드 1개
- * - 전시+특강: 전시 카드 + (연결 특강 카드) 1개
- * - 특강만: lecture.exhibitionId 없는 특강을 특강 카드로 표시(전용 폼에서 만든 것)
- */
+/** 카드 목록 */
 const cards = computed(() => {
   const exMap = new Map(mergedExhibitions.value.map((x) => [x.id, x]));
-
   const list = [];
 
-  // 전시 카드
   mergedExhibitions.value.forEach((ex) => {
     list.push({
       key: `ex:${ex.id}`,
@@ -606,16 +620,13 @@ const cards = computed(() => {
     });
   });
 
-  // 특강 카드 (전시 연결형 + 단독형)
   mergedLectures.value.forEach((lec) => {
     const exId = lec.exhibitionId || "";
     const ex = exId ? exMap.get(exId) : null;
 
-    // 전시 연결형: 전시가 있고, 전시가 hasLecture=true인 경우에만 "같이 있는" 특강으로 노출
     const isLinked =
       !!exId && !!ex && !!ex.hasLecture && (ex.lectureId ? ex.lectureId === lec.id : true);
 
-    // 단독형: exhibitionId가 비어있으면 노출
     const isStandalone = !exId;
 
     if (!isLinked && !isStandalone) return;
@@ -634,7 +645,6 @@ const cards = computed(() => {
     });
   });
 
-  // 최신순: 전시/특강 각자 날짜 기반으로 섞어서 정렬
   function cardSortKey(c) {
     if (c.type === "exhibition") {
       const ex = mergedExhibitions.value.find((x) => x.id === c.id);
@@ -652,7 +662,7 @@ const cards = computed(() => {
   return list.sort((a, b) => cardSortKey(b) - cardSortKey(a));
 });
 
-/** ✅ 탭 + 검색 */
+/** 탭 + 검색 */
 const filteredCards = computed(() => {
   const s = (qText.value || "").trim().toLowerCase();
 
@@ -670,6 +680,62 @@ const filteredCards = computed(() => {
       (x.sub2 || "").toLowerCase().includes(s)
     );
   });
+});
+
+/** ✅ 페이지 계산 */
+const totalItems = computed(() => filteredCards.value.length);
+const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / pageSize)));
+
+const pagedCards = computed(() => {
+  const p = Math.min(Math.max(1, page.value), totalPages.value);
+  const start = (p - 1) * pageSize;
+  const end = start + pageSize;
+  return filteredCards.value.slice(start, end);
+});
+
+/** ✅ 페이지 버튼(최대 7개) */
+const pageButtons = computed(() => {
+  const tp = totalPages.value;
+  const cur = Math.min(Math.max(1, page.value), tp);
+
+  const maxBtns = 7;
+  let start = Math.max(1, cur - Math.floor(maxBtns / 2));
+  let end = start + maxBtns - 1;
+  if (end > tp) {
+    end = tp;
+    start = Math.max(1, end - maxBtns + 1);
+  }
+
+  const out = [];
+  for (let i = start; i <= end; i++) out.push(i);
+  return out;
+});
+
+function clampPage() {
+  const tp = totalPages.value;
+  if (page.value < 1) page.value = 1;
+  if (page.value > tp) page.value = tp;
+}
+function goPage(p) {
+  page.value = p;
+  clampPage();
+}
+function goPrev() {
+  page.value = Math.max(1, page.value - 1);
+}
+function goNext() {
+  page.value = Math.min(totalPages.value, page.value + 1);
+}
+function goFirst() {
+  page.value = 1;
+}
+function goLast() {
+  page.value = totalPages.value;
+}
+
+/** ✅ 검색/탭 변경 시 1페이지로 */
+watch([qText, filterTab], () => {
+  page.value = 1;
 });
 
 onMounted(async () => {
@@ -714,7 +780,7 @@ function findLectureByExhibitionId(exId) {
   return mergedLectures.value.find((x) => x.exhibitionId === exId) || null;
 }
 
-/** ✅ 새 전시 / 새 특강 */
+/** 새 전시 / 새 특강 */
 function newExhibition() {
   clearMsgs();
   mode.value = "exhibition";
@@ -737,14 +803,12 @@ function newExhibition() {
   lecInEx.time = "";
   lecInEx.imageUrl = "";
 
-  // 특강전용 폼도 초기화
   lecOnly.title = "";
   lecOnly.instructor = "";
   lecOnly.date = "";
   lecOnly.time = "";
   lecOnly.imageUrl = "";
 }
-
 function newLecture() {
   clearMsgs();
   mode.value = "lecture";
@@ -752,14 +816,12 @@ function newLecture() {
   selectedType.value = "";
   selectedId.value = "";
 
-  // 특강 전용 폼 초기화
   lecOnly.title = "";
   lecOnly.instructor = "";
   lecOnly.date = "";
   lecOnly.time = "";
   lecOnly.imageUrl = "";
 
-  // 전시폼은 건드리지 않음(하지만 선택 해제는 함)
   exForm.lectureId = "";
   lecInEx.title = "";
   lecInEx.instructor = "";
@@ -768,7 +830,7 @@ function newLecture() {
   lecInEx.imageUrl = "";
 }
 
-/** ✅ 카드 선택: 전시카드는 전시가 메인 */
+/** 카드 선택 */
 async function selectCard(item) {
   clearMsgs();
   selectedKey.value = item.key;
@@ -790,7 +852,6 @@ async function selectCard(item) {
     exForm.hasLecture = !!ex.hasLecture;
     exForm.lectureId = ex.lectureId || "";
 
-    // 전시에 특강이 있으면 같이 로드(하지만 화면은 전시폼 유지)
     lecInEx.title = "";
     lecInEx.instructor = "";
     lecInEx.date = "";
@@ -815,13 +876,11 @@ async function selectCard(item) {
     return;
   }
 
-  // lecture 카드 선택 → 특강 전용 폼
   mode.value = "lecture";
 
   const lec = findLectureById(item.id);
   if (!lec) return setErr("특강 데이터를 찾을 수 없습니다.");
 
-  // 전시 연결 특강도 목록에 보이지만, 편집은 여기서 가능(단, 전시에 연결/해제는 전시폼에서 하는 구조 유지)
   lecOnly.title = lec.title || "";
   lecOnly.instructor = lec.instructor || "";
   lecOnly.imageUrl = lec.imageUrl || "";
@@ -829,7 +888,7 @@ async function selectCard(item) {
   lecOnly.time = lec.dateTime ? tsToTimeInput(lec.dateTime) : "";
 }
 
-/** ✅ 저장 가능 여부 */
+/** 저장 가능 여부 */
 const canSave = computed(() => {
   if (saving.value) return false;
 
@@ -844,13 +903,12 @@ const canSave = computed(() => {
     return lecTitleOk && lecDateOk;
   }
 
-  // lecture-only
   const tOk = (lecOnly.title || "").trim().length > 0;
   const dOk = !!lecOnly.date;
   return tOk && dOk;
 });
 
-/** ✅ 저장 */
+/** 저장 */
 async function handleSave() {
   clearMsgs();
 
@@ -864,7 +922,6 @@ async function handleSave() {
 
   try {
     if (mode.value === "exhibition") {
-      // 전시 저장(전시가 메인)
       const exPayload = {
         deleted: false,
         title: (exForm.title || "").trim(),
@@ -891,7 +948,6 @@ async function handleSave() {
         await setDoc(doc(db, "exhibitions", exId), exPayload, { merge: true });
       }
 
-      // 전시+특강
       if (exForm.hasLecture) {
         const dt = lectureDateTimeToTimestamp(lecInEx.date, lecInEx.time);
 
@@ -926,7 +982,6 @@ async function handleSave() {
 
         setOk("저장되었습니다. (전시 + 특강)");
       } else {
-        // 특강 연결 해제: 기존 연결 특강은 deleted 처리
         if (exForm.lectureId) {
           await setDoc(
             doc(db, "lectures", exForm.lectureId),
@@ -948,12 +1003,11 @@ async function handleSave() {
       return;
     }
 
-    // ✅ 특강 전용 저장(전시 연결 없음)
     const dt = lectureDateTimeToTimestamp(lecOnly.date, lecOnly.time);
 
     const lecPayload = {
       deleted: false,
-      exhibitionId: "", // 단독 특강
+      exhibitionId: "",
       title: (lecOnly.title || "").trim(),
       instructor: (lecOnly.instructor || "").trim(),
       imageUrl: (lecOnly.imageUrl || "").trim(),
@@ -983,7 +1037,7 @@ async function handleSave() {
   }
 }
 
-/** ✅ 삭제 */
+/** 삭제 */
 async function handleDelete() {
   clearMsgs();
 
@@ -1004,7 +1058,6 @@ async function handleDelete() {
         { merge: true }
       );
 
-      // 연결 특강(lectureId + exhibitionId 매칭)도 삭제 처리
       const ex = findExById(exId);
       if (ex?.lectureId) {
         batch.set(
@@ -1030,7 +1083,6 @@ async function handleDelete() {
       return;
     }
 
-    // lecture 카드 삭제(단독/연결 특강 모두 가능)
     const lecId = selectedId.value;
     batch.set(
       doc(db, "lectures", lecId),
@@ -1342,6 +1394,45 @@ async function handleDelete() {
   margin: 2px 0;
 }
 
+/* Pager */
+.pager{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin: 0 0 12px;
+  padding: 10px 10px;
+  border: 1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  background: rgba(0,0,0,0.02);
+}
+.pager-text{
+  font-size:12px;
+  color:#666;
+}
+.pager-right{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.pbtn{
+  border:1px solid rgba(0,0,0,0.12);
+  background:#fff;
+  border-radius:10px;
+  padding:8px 10px;
+  font-size:12px;
+  cursor:pointer;
+}
+.pbtn:hover{ background: rgba(0,0,0,0.03); }
+.pbtn:disabled{ opacity:0.55; cursor:not-allowed; }
+.pbtn.num{ min-width: 40px; text-align:center; }
+.pbtn.active{
+  background:#111;
+  color:#fff;
+  border-color: rgba(0,0,0,0.12);
+}
+
 /* Toggle */
 .toggle-row {
   display: flex;
@@ -1467,5 +1558,7 @@ async function handleDelete() {
   .grid { grid-template-columns: 1fr; }
   .list-item.row { grid-template-columns: 64px 1fr; }
   .thumb { width: 64px; height: 64px; }
+  .pager{ flex-direction: column; align-items:flex-start; }
+  .pager-right{ width:100%; justify-content:flex-start; }
 }
 </style>
