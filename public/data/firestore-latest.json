@@ -1,7 +1,7 @@
 {
   "meta": {
     "timezone": "Asia/Seoul",
-    "publishedAt": "2026-01-22T02:58:02.288Z",
+    "publishedAt": "2026-01-22T03:03:00.877Z",
     "stampKST": "20260122",
     "collections": [
       "exhibitions",
@@ -11,20 +11,6 @@
   },
   "data": {
     "exhibitions": [
-      {
-        "id": "GzHGUhctxS18wcz4iHaI",
-        "deleted": false,
-        "title": "특별부녀전시회",
-        "artistName": "박수근, 박인숙",
-        "cardName": "영선갤러리",
-        "imageUrl": "https://github.com/youngsungallery/IMG_DB/blob/main/youngsungallery/exh/exh_main_2016_09_05.png?raw=true",
-        "startDate": "2016-09-04T15:00:00.000Z",
-        "endDate": "2016-09-29T15:00:00.000Z",
-        "hasLecture": false,
-        "createdAt": "2026-01-22T01:50:38.243Z",
-        "lectureId": "",
-        "updatedAt": "2026-01-22T01:50:38.496Z"
-      },
       {
         "id": "qdYG077v1tkKnlKjt0cX",
         "deleted": false,
