@@ -1,3 +1,4 @@
+<!-- FILE: public/404.html -->
 <!doctype html>
 <html lang="ko">
   <head>
@@ -7,27 +8,13 @@
 
     <script>
       (function () {
-        // GitHub Pages SPA redirect (history mode)
-        // /<repo>/something -> /<repo>/?p=/<repo>/something
         var l = window.location;
 
-        // repo pages: https://user.github.io/<repo>/...
-        // user pages/custom domain: base is "/"
-        var parts = l.pathname.split("/").filter(Boolean);
+        // ✅ repo name 고정 (중요)
+        var repoBase = "/website";
 
-        // user.github.io/<repo>/... 인 경우 base="/<repo>"
-        // user.github.io/... 또는 커스텀 도메인인 경우 base=""
-        var isGithubIo = l.hostname.indexOf("github.io") !== -1;
-        var base = "";
-
-        if (isGithubIo && parts.length > 0) {
-          // 첫 조각이 repo name인 케이스를 가장 흔한 기본값으로 처리
-          base = "/" + parts[0];
-        } else {
-          base = "";
-        }
-
-        var target = base + "/?p=" + encodeURIComponent(l.pathname + l.search + l.hash);
+        // 원래 경로를 p로 담아서 repoBase의 index로 이동
+        var target = repoBase + "/?p=" + encodeURIComponent(l.pathname + l.search + l.hash);
         l.replace(target);
       })();
     </script>
