@@ -1,7 +1,7 @@
 {
   "meta": {
     "timezone": "Asia/Seoul",
-    "publishedAt": "2026-01-22T01:12:39.323Z",
+    "publishedAt": "2026-01-22T02:39:09.578Z",
     "stampKST": "20260122",
     "collections": [
       "exhibitions",
@@ -11,69 +11,18 @@
   "data": {
     "exhibitions": [
       {
-        "id": "9Tb9VkSZshs0fgStP8Di",
+        "id": "GzHGUhctxS18wcz4iHaI",
         "deleted": false,
-        "hasLecture": false,
+        "title": "특별부녀전시회",
+        "artistName": "박수근, 박인숙",
         "cardName": "영선갤러리",
-        "endDate": "2016-06-28T15:00:00.000Z",
-        "imageUrl": "https://github.com/youngsungallery/IMG_DB/blob/main/youngsungallery/exh/exh_main_2016_06_04.png?raw=true",
-        "artistName": "최영란",
-        "title": "최영란 작품전",
-        "startDate": "2016-06-03T15:00:00.000Z",
-        "lectureId": "",
-        "updatedAt": "2026-01-22T01:08:00.216Z"
-      },
-      {
-        "id": "m7BG6wPpFKJvE38SrvgN",
-        "deleted": false,
+        "imageUrl": "https://github.com/youngsungallery/IMG_DB/blob/main/youngsungallery/exh/exh_main_2016_09_05.png?raw=true",
+        "startDate": "2016-09-04T15:00:00.000Z",
+        "endDate": "2016-09-29T15:00:00.000Z",
         "hasLecture": false,
-        "cardName": "영선갤러리",
-        "endDate": "2016-05-30T15:00:00.000Z",
-        "imageUrl": "https://github.com/youngsungallery/IMG_DB/blob/main/youngsungallery/exh/exh_main_2016_05_02.png?raw=true",
-        "artistName": "소품전",
-        "title": "소품 전시회",
-        "startDate": "2016-05-01T15:00:00.000Z",
+        "createdAt": "2026-01-22T01:50:38.243Z",
         "lectureId": "",
-        "updatedAt": "2026-01-22T01:07:47.627Z"
-      },
-      {
-        "id": "qnCPD90oDekMnGTn4XeH",
-        "deleted": false,
-        "hasLecture": false,
-        "cardName": "영선갤러리",
-        "endDate": "2016-07-26T15:00:00.000Z",
-        "imageUrl": "https://github.com/youngsungallery/IMG_DB/blob/main/youngsungallery/exh/exh_main_2016_07_04.png?raw=true",
-        "artistName": "정규석",
-        "title": "정규석 작품전",
-        "startDate": "2016-07-03T15:00:00.000Z",
-        "lectureId": "",
-        "updatedAt": "2026-01-22T01:08:14.743Z"
-      },
-      {
-        "id": "rHtjR4IkqSw4QkzVfNDG",
-        "deleted": false,
-        "hasLecture": false,
-        "cardName": "영선갤러리",
-        "endDate": "2016-08-30T15:00:00.000Z",
-        "imageUrl": "https://github.com/youngsungallery/IMG_DB/blob/main/youngsungallery/exh/exh_main_2016_08_01.png?raw=true",
-        "artistName": "문홍규",
-        "title": "문홍규 작품전",
-        "startDate": "2016-07-31T15:00:00.000Z",
-        "lectureId": "",
-        "updatedAt": "2026-01-22T01:08:30.854Z"
-      },
-      {
-        "id": "zaXCYHLSaYk8cj5Hc5Aq",
-        "deleted": false,
-        "hasLecture": false,
-        "cardName": "영선갤러리",
-        "endDate": "2016-04-29T15:00:00.000Z",
-        "artistName": "소장전",
-        "title": "소장 작품전",
-        "startDate": "2016-03-31T15:00:00.000Z",
-        "lectureId": "",
-        "imageUrl": "https://github.com/youngsungallery/IMG_DB/blob/main/youngsungallery/exh/exh_main_2016_04_01.png?raw=true",
-        "updatedAt": "2026-01-22T01:07:26.732Z"
+        "updatedAt": "2026-01-22T01:50:38.496Z"
       }
     ],
     "lectures": []
