@@ -1,3 +1,9 @@
+<!-- FILE: src/components/admin/AdminExhibitionsPage.vue
+  NOTE:
+  - GitHub Pages에서는 fetch("/data/...") 같은 절대경로가 404를 만들 수 있음.
+  - 반드시 import.meta.env.BASE_URL 기준으로 public/data/firestore-latest.json 을 로드해야 함.
+-->
+
 <template>
   <section class="admin-page">
     <header class="page-head">
@@ -280,7 +286,6 @@ import {
   collection,
   doc,
   addDoc,
-  updateDoc,
   getDocs,
   query,
   where,
@@ -294,7 +299,7 @@ import { db } from "@/lib/firebase";
 
 /**
  * 운영 구조
- * - /data/firestore-latest.json : 영구데이터(정본)
+ * - public/data/firestore-latest.json : 영구데이터(정본)
  * - Firestore(exhibitions/lectures) : 발행 전 임시 변경/삭제 오버레이
  * - 화면: 정본 + 오버레이 merge 결과
  * - 삭제: deleteDoc가 아니라 deleted:true 기록
@@ -398,7 +403,12 @@ const base = ref({
 
 async function loadLatestJson() {
   try {
-    const res = await fetch("/data/firestore-latest.json", { cache: "no-store" });
+    // ✅ FIX: GH Pages 대응 (절대경로 "/data/..." 금지)
+    // import.meta.env.BASE_URL 예) "/website/" 형태로 들어올 수 있음
+    const baseUrl = import.meta.env.BASE_URL || "/";
+    const url = `${baseUrl}data/firestore-latest.json`;
+
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return;
 
     const payload = await res.json();
