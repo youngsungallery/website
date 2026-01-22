@@ -1,10 +1,10 @@
 // FILE: scripts/publish-firestore-to-public.mjs
 //
 // ✅ 요구사항 그대로:
-// 1) Firestore(exhibitions, lectures) -> public/data/firestore-latest.json 로 발행
+// 1) Firestore(exhibitions, lectures) -> public/data/exhibitions.json 로 발행 (최신 고정 파일명)
 // 2) "기존 영구 데이터"는 유지 + 누적 (id 기준 merge: 기존 유지, 새로 오면 추가/업데이트)
 // 3) 발행 성공 후 Firestore 컬렉션은 "싹 비우기" (delete)
-// 4) dated 스냅샷도 저장: public/data/firestore-YYYYMMDD.json
+// 4) dated 스냅샷도 저장: public/data/exhibitions-YYYYMMDD.json
 //
 // NOTE:
 // - merge 정책: 같은 id면 최신(Firestore) 값이 기존을 덮어씀, 없는 id는 추가.
@@ -124,8 +124,10 @@ async function main() {
   const outDir = path.join("public", "data");
   ensureDir(outDir);
 
-  const latestPath = path.join(outDir, "firestore-latest.json");
-  const datedPath = path.join(outDir, `firestore-${stamp}.json`);
+  // ✅ 파일명 고정(최신): exhibitions.json
+  const latestPath = path.join(outDir, "exhibitions.json");
+  // ✅ dated 스냅샷: exhibitions-YYYYMMDD.json
+  const datedPath = path.join(outDir, `exhibitions-${stamp}.json`);
 
   // ✅ 기존 정본 로드
   const prev = safeReadJson(latestPath);
