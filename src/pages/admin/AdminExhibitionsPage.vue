@@ -9,10 +9,16 @@
     <header class="page-head">
       <div class="head-top">
         <RouterLink to="/admin" class="home-link">← 관리자 홈</RouterLink>
+
         <div class="head-actions">
-          <button type="button" class="btn" @click="resetForm" :disabled="saving">
+          <!-- ✅ 새 전시 / 새 특강 분리 -->
+          <button type="button" class="btn" @click="newExhibition" :disabled="saving">
             새 전시
           </button>
+          <button type="button" class="btn" @click="newLecture" :disabled="saving">
+            새 특강
+          </button>
+
           <button
             type="button"
             class="btn primary"
@@ -25,8 +31,10 @@
       </div>
 
       <div class="head-title">
-        <h2 class="title">전시 관리</h2>
-        <p class="desc">전시를 등록/수정하고, 특강이 있으면 함께 연결합니다.</p>
+        <h2 class="title">전시/특강 관리</h2>
+        <p class="desc">
+          전시는 전시폼에서, 전시+특강은 전시폼에서 함께, 특강만은 특강폼에서 등록합니다.
+        </p>
         <p v-if="errorMsg" class="msg error">{{ errorMsg }}</p>
         <p v-if="okMsg" class="msg ok">{{ okMsg }}</p>
       </div>
@@ -34,166 +42,227 @@
 
     <!-- ✅ 전체를 한 컬럼으로: 상단 폼 / 하단 목록 -->
     <section class="layout single">
-      <!-- TOP: 전시 폼 -->
+      <!-- TOP: 폼 -->
       <main class="panel form-panel">
         <div class="panel-head">
-          <div class="panel-title">새 전시 / 전시 수정</div>
-          <div class="panel-sub">상단에서 입력 후 저장하세요</div>
+          <div class="panel-title">
+            <span v-if="mode === 'exhibition'">전시 등록 / 수정</span>
+            <span v-else>특강 등록 / 수정</span>
+          </div>
+          <div class="panel-sub">
+            <span v-if="mode === 'exhibition'">전시를 저장합니다. 특강이 있으면 아래에서 함께 작성하세요.</span>
+            <span v-else>특강만 저장합니다. (전시에 연결하려면 전시폼에서 등록)</span>
+          </div>
         </div>
 
         <div class="panel-body form">
-          <div class="grid">
-            <label class="field">
-              <span class="label">전시 제목</span>
-              <input v-model="form.title" class="input" type="text" placeholder="예) 봄의 색채" />
-            </label>
+          <!-- ✅ 전시 폼 -->
+          <template v-if="mode === 'exhibition'">
+            <div class="grid">
+              <label class="field">
+                <span class="label">전시 제목</span>
+                <input v-model="exForm.title" class="input" type="text" placeholder="예) 봄의 색채" />
+              </label>
 
-            <label class="field">
-              <span class="label">작가명</span>
-              <input v-model="form.artistName" class="input" type="text" placeholder="예) 홍길동" />
-            </label>
+              <label class="field">
+                <span class="label">작가명</span>
+                <input v-model="exForm.artistName" class="input" type="text" placeholder="예) 홍길동" />
+              </label>
 
-            <label class="field">
-              <span class="label">카드 이름</span>
-              <input v-model="form.cardName" class="input" type="text" placeholder="예) 영선갤러리 기획전" />
-            </label>
+              <label class="field">
+                <span class="label">카드 이름</span>
+                <input v-model="exForm.cardName" class="input" type="text" placeholder="예) 영선갤러리 기획전" />
+              </label>
 
-            <label class="field">
-              <span class="label">전시 시작일</span>
-              <input v-model="form.startDate" class="input" type="date" />
-            </label>
+              <label class="field">
+                <span class="label">전시 시작일</span>
+                <input v-model="exForm.startDate" class="input" type="date" />
+              </label>
 
-            <label class="field">
-              <span class="label">전시 종료일</span>
-              <input v-model="form.endDate" class="input" type="date" />
-            </label>
+              <label class="field">
+                <span class="label">전시 종료일</span>
+                <input v-model="exForm.endDate" class="input" type="date" />
+              </label>
 
-            <label class="field wide">
-              <span class="label">전시 포스터 이미지 URL</span>
-              <input
-                v-model="form.imageUrl"
-                class="input"
-                type="url"
-                placeholder="https://..."
-              />
-              <span class="hint">
-                전시+특강 같이 진행 시, 특강 포스터 URL이 비어있으면 전시 포스터를 사용합니다.
-              </span>
-            </label>
-          </div>
-
-          <div class="divider"></div>
-
-          <!-- 특강 토글 -->
-          <div class="toggle-row">
-            <div class="toggle-left">
-              <div class="toggle-title">특강</div>
-              <div class="toggle-desc">전시와 함께 특강이 진행되는 경우 체크</div>
+              <label class="field wide">
+                <span class="label">전시 포스터 이미지 URL</span>
+                <input
+                  v-model="exForm.imageUrl"
+                  class="input"
+                  type="url"
+                  placeholder="https://..."
+                />
+                <span class="hint">
+                  전시+특강 같이 진행 시, 특강 포스터 URL이 비어있으면 전시 포스터를 사용합니다.
+                </span>
+              </label>
             </div>
 
-            <label class="switch">
-              <input v-model="form.hasLecture" type="checkbox" />
-              <span class="slider"></span>
-            </label>
-          </div>
+            <div class="divider"></div>
 
-          <!-- 특강 폼 -->
-          <section v-if="form.hasLecture" class="lecture-box">
-            <div class="lecture-head">
-              <div>
-                <div class="lecture-title">특강 정보</div>
-                <div class="lecture-sub">특강 포스터 URL은 비워도 됩니다(전시 포스터 사용)</div>
+            <!-- 특강 토글 -->
+            <div class="toggle-row">
+              <div class="toggle-left">
+                <div class="toggle-title">특강</div>
+                <div class="toggle-desc">전시와 함께 특강이 진행되는 경우 체크</div>
               </div>
+
+              <label class="switch">
+                <input v-model="exForm.hasLecture" type="checkbox" />
+                <span class="slider"></span>
+              </label>
             </div>
 
+            <!-- 특강 폼(전시에 딸린 특강) -->
+            <section v-if="exForm.hasLecture" class="lecture-box">
+              <div class="lecture-head">
+                <div>
+                  <div class="lecture-title">특강 정보</div>
+                  <div class="lecture-sub">특강 포스터 URL은 비워도 됩니다(전시 포스터 사용)</div>
+                </div>
+              </div>
+
+              <div class="grid">
+                <label class="field">
+                  <span class="label">특강명</span>
+                  <input v-model="lecInEx.title" class="input" type="text" placeholder="예) 작가와의 대화" />
+                </label>
+
+                <label class="field">
+                  <span class="label">강사</span>
+                  <input v-model="lecInEx.instructor" class="input" type="text" placeholder="예) 홍길동" />
+                </label>
+
+                <label class="field">
+                  <span class="label">특강 날짜</span>
+                  <input v-model="lecInEx.date" class="input" type="date" />
+                </label>
+
+                <label class="field">
+                  <span class="label">특강 시간</span>
+                  <input v-model="lecInEx.time" class="input" type="time" />
+                </label>
+
+                <label class="field wide">
+                  <span class="label">특강 이미지 URL (선택)</span>
+                  <input v-model="lecInEx.imageUrl" class="input" type="url" placeholder="비워도 됨" />
+                </label>
+              </div>
+            </section>
+
+            <div class="divider"></div>
+
+            <!-- 미리보기 -->
+            <section class="preview">
+              <div class="preview-head">
+                <div class="panel-title">미리보기</div>
+                <div class="panel-sub">전시 카드 + (옵션) 특강 카드</div>
+              </div>
+
+              <div class="preview-card">
+                <div class="pv-title">{{ exForm.title || "전시 제목" }}</div>
+                <div class="pv-meta">
+                  <span>{{ exForm.artistName || "작가명" }}</span>
+                  <span class="dot">·</span>
+                  <span>{{ exForm.cardName || "카드 이름" }}</span>
+                </div>
+                <div class="pv-date">
+                  <span>{{ exForm.startDate || "YYYY-MM-DD" }}</span>
+                  <span> ~ </span>
+                  <span>{{ exForm.endDate || "YYYY-MM-DD" }}</span>
+                </div>
+
+                <div class="pv-row">
+                  <span class="badge">전시</span>
+                  <span class="badge" v-if="exForm.hasLecture">특강 포함</span>
+                  <span class="badge ghost" v-if="exForm.imageUrl">포스터</span>
+                </div>
+
+                <div v-if="exForm.hasLecture" class="pv-lecture">
+                  <div class="pv-lecture-title">특강: {{ lecInEx.title || "특강명" }}</div>
+                  <div class="pv-lecture-meta">
+                    <span>{{ lecInEx.instructor || "강사" }}</span>
+                    <span class="dot">·</span>
+                    <span>{{ lecInEx.date || "YYYY-MM-DD" }} {{ lecInEx.time || "HH:MM" }}</span>
+                  </div>
+                  <div class="pv-lecture-note">
+                    포스터:
+                    {{
+                      lecInEx.imageUrl
+                        ? "특강 이미지 URL"
+                        : (exForm.imageUrl ? "전시 포스터 사용" : "없음")
+                    }}
+                  </div>
+                </div>
+              </div>
+            </section>
+          </template>
+
+          <!-- ✅ 특강 전용 폼(특강만) -->
+          <template v-else>
             <div class="grid">
               <label class="field">
                 <span class="label">특강명</span>
-                <input v-model="lecture.title" class="input" type="text" placeholder="예) 작가와의 대화" />
+                <input v-model="lecOnly.title" class="input" type="text" placeholder="예) 작가와의 대화" />
               </label>
 
               <label class="field">
                 <span class="label">강사</span>
-                <input v-model="lecture.instructor" class="input" type="text" placeholder="예) 홍길동" />
+                <input v-model="lecOnly.instructor" class="input" type="text" placeholder="예) 홍길동" />
               </label>
 
               <label class="field">
                 <span class="label">특강 날짜</span>
-                <input v-model="lecture.date" class="input" type="date" />
+                <input v-model="lecOnly.date" class="input" type="date" />
               </label>
 
               <label class="field">
                 <span class="label">특강 시간</span>
-                <input v-model="lecture.time" class="input" type="time" />
+                <input v-model="lecOnly.time" class="input" type="time" />
               </label>
 
               <label class="field wide">
                 <span class="label">특강 이미지 URL (선택)</span>
-                <input v-model="lecture.imageUrl" class="input" type="url" placeholder="비워도 됨" />
+                <input v-model="lecOnly.imageUrl" class="input" type="url" placeholder="https://... (선택)" />
               </label>
             </div>
-          </section>
 
-          <div class="divider"></div>
+            <div class="divider"></div>
 
-          <!-- 미리보기 영역 -->
-          <section class="preview">
-            <div class="preview-head">
-              <div class="panel-title">미리보기</div>
-              <div class="panel-sub">표시 구조 확인용</div>
-            </div>
-
-            <div class="preview-card">
-              <div class="pv-title">{{ form.title || "전시 제목" }}</div>
-              <div class="pv-meta">
-                <span>{{ form.artistName || "작가명" }}</span>
-                <span class="dot">·</span>
-                <span>{{ form.cardName || "카드 이름" }}</span>
-              </div>
-              <div class="pv-date">
-                <span>{{ form.startDate || "YYYY-MM-DD" }}</span>
-                <span> ~ </span>
-                <span>{{ form.endDate || "YYYY-MM-DD" }}</span>
+            <section class="preview">
+              <div class="preview-head">
+                <div class="panel-title">미리보기</div>
+                <div class="panel-sub">특강 카드</div>
               </div>
 
-              <div class="pv-row">
-                <span class="badge" v-if="form.hasLecture">특강 진행</span>
-                <span class="badge ghost" v-if="form.imageUrl">포스터 링크</span>
-              </div>
-
-              <div v-if="form.hasLecture" class="pv-lecture">
-                <div class="pv-lecture-title">
-                  특강: {{ lecture.title || "특강명" }}
-                </div>
-                <div class="pv-lecture-meta">
-                  <span>{{ lecture.instructor || "강사" }}</span>
+              <div class="preview-card">
+                <div class="pv-title">{{ lecOnly.title || "특강명" }}</div>
+                <div class="pv-meta">
+                  <span>{{ lecOnly.instructor || "강사" }}</span>
                   <span class="dot">·</span>
-                  <span>{{ lecture.date || "YYYY-MM-DD" }} {{ lecture.time || "HH:MM" }}</span>
+                  <span>{{ (lecOnly.date || "YYYY-MM-DD") }} {{ (lecOnly.time || "HH:MM") }}</span>
                 </div>
-                <div class="pv-lecture-note">
-                  포스터:
-                  {{
-                    lecture.imageUrl
-                      ? "특강 이미지 URL"
-                      : (form.imageUrl ? "전시 포스터 사용" : "없음")
-                  }}
+
+                <div class="pv-row">
+                  <span class="badge">특강</span>
+                  <span class="badge ghost" v-if="lecOnly.imageUrl">포스터</span>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
+          </template>
         </div>
       </main>
 
-      <!-- BOTTOM: 전시 목록/검색 -->
+      <!-- BOTTOM: 목록/검색 -->
       <aside class="panel list-panel">
         <div class="panel-head">
-          <div class="panel-title">전시 목록</div>
-          <div class="panel-sub">필터/검색 후 선택하여 수정</div>
+          <div class="panel-title">목록</div>
+          <div class="panel-sub">전시/특강을 검색하고 선택하여 수정</div>
         </div>
 
         <div class="panel-body list-wrap">
-          <!-- ✅ 태그 필터 -->
-          <div class="tabs" role="tablist" aria-label="전시 필터">
+          <!-- ✅ 탭 필터: 전시/특강 -->
+          <div class="tabs" role="tablist" aria-label="필터">
             <button
               type="button"
               class="tab"
@@ -225,20 +294,19 @@
               v-model="q"
               class="search"
               type="text"
-              placeholder="전시 제목/작가/카드 이름 검색"
+              placeholder="전시/특강 제목, 작가/강사, 카드명, 기간/일시 검색"
             />
           </div>
 
           <div class="list">
             <button
-              v-for="item in filtered"
-              :key="item.id"
+              v-for="item in filteredCards"
+              :key="item.key"
               type="button"
               class="list-item row"
-              :class="{ active: selectedId === item.id }"
-              @click="select(item.id)"
+              :class="{ active: selectedKey === item.key }"
+              @click="selectCard(item)"
             >
-              <!-- ✅ 썸네일을 카드 왼쪽에 -->
               <div class="thumb">
                 <img v-if="item.imageUrl" :src="item.imageUrl" alt="" loading="lazy" />
                 <div v-else class="thumb-ph"></div>
@@ -247,19 +315,21 @@
               <div class="li-main">
                 <div class="li-title">{{ item.title || "(제목 없음)" }}</div>
                 <div class="li-meta">
-                  <span>{{ item.artistName || "-" }}</span>
+                  <span>{{ item.sub1 || "-" }}</span>
                   <span class="dot">·</span>
-                  <span>{{ item.periodText }}</span>
+                  <span>{{ item.sub2 || "-" }}</span>
                 </div>
                 <div class="li-badges">
-                  <span v-if="item.hasLecture" class="badge">특강</span>
+                  <span class="badge" v-if="item.type === 'exhibition'">전시</span>
+                  <span class="badge" v-else>특강</span>
+                  <span v-if="item.type === 'exhibition' && item.hasLecture" class="badge">특강 포함</span>
                   <span v-if="item.imageUrl" class="badge ghost">포스터</span>
                 </div>
               </div>
             </button>
 
-            <div v-if="!loading && filtered.length === 0" class="empty">
-              전시 데이터가 없습니다.
+            <div v-if="!loading && filteredCards.length === 0" class="empty">
+              데이터가 없습니다.
             </div>
             <div v-if="loading" class="empty">불러오는 중...</div>
           </div>
@@ -269,7 +339,7 @@
           <button
             type="button"
             class="btn danger subtle"
-            :disabled="!selectedId || saving"
+            :disabled="!selectedKey || saving"
             @click="handleDelete"
           >
             {{ saving ? "처리 중..." : "삭제" }}
@@ -298,25 +368,30 @@ import {
 import { db } from "@/lib/firebase";
 
 /**
- * 운영 구조
- * - public/data/exhibitions.json : 영구데이터(정본)
- * - Firestore(exhibitions/lectures) : 발행 전 임시 변경/삭제 오버레이
- * - 화면: 정본 + 오버레이 merge 결과
- * - 삭제: deleteDoc가 아니라 deleted:true 기록
+ * 목표 동작(요청 반영)
+ * 1) 전시폼만 작성 → 전시 카드만 표시
+ * 2) 전시+특강 작성(전시폼 내) → 전시 카드 + 특강 카드 표시
+ * 3) 특강만 표시 → 특강 전용 폼에서만 작성(전시와 연결 안 함)
+ * 4) 전시 카드 클릭 시 전시가 메인(특강으로 "넘어가지" 않음)
  */
+
+const mode = ref("exhibition"); // 'exhibition' | 'lecture'
+const filterTab = ref("all"); // 'all' | 'exhibition' | 'lecture'
 
 const qText = ref("");
 const q = qText;
 
-const filterTab = ref("all"); // 'all' | 'exhibition' | 'lecture'
-
-const selectedId = ref("");
 const saving = ref(false);
 const loading = ref(true);
 const errorMsg = ref("");
 const okMsg = ref("");
 
-const form = reactive({
+const selectedKey = ref(""); // 카드 키(타입+id)
+const selectedType = ref(""); // 'exhibition' | 'lecture'
+const selectedId = ref(""); // 해당 타입의 id
+
+// ✅ 전시 폼
+const exForm = reactive({
   title: "",
   artistName: "",
   cardName: "",
@@ -327,7 +402,8 @@ const form = reactive({
   lectureId: "",
 });
 
-const lecture = reactive({
+// ✅ 전시 안에 포함되는 특강 폼(연결형)
+const lecInEx = reactive({
   title: "",
   instructor: "",
   date: "",
@@ -335,27 +411,13 @@ const lecture = reactive({
   imageUrl: "",
 });
 
-/**
- * ✅ FIX: "전시 없이 특강만" 저장 허용
- * - 전시 제목이 비어있고 hasLecture=true인 경우:
- *   canSave는 특강 필수값(특강명/날짜) 기준으로 활성화
- * - 저장 시 전시 문서가 필요하므로(기존 구조 유지):
- *   전시 제목이 없으면 "특강명"을 전시 제목으로 자동 사용
- */
-const canSave = computed(() => {
-  if (saving.value) return false;
-
-  const exTitleOk = (form.title || "").trim().length > 0;
-
-  if (!form.hasLecture) {
-    return exTitleOk;
-  }
-
-  const lecTitleOk = (lecture.title || "").trim().length > 0;
-  const lecDateOk = !!lecture.date;
-
-  // 특강만 등록 가능
-  return (exTitleOk || (lecTitleOk && lecDateOk)) && lecTitleOk && lecDateOk;
+// ✅ 특강 전용 폼(단독형)
+const lecOnly = reactive({
+  title: "",
+  instructor: "",
+  date: "",
+  time: "",
+  imageUrl: "",
 });
 
 function clearMsgs() {
@@ -380,7 +442,6 @@ function dateToTimestamp(dateStr) {
   if (Number.isNaN(d.getTime())) return null;
   return Timestamp.fromDate(d);
 }
-
 function lectureDateTimeToTimestamp(dateStr, timeStr) {
   if (!dateStr) return null;
   const t = timeStr || "00:00";
@@ -398,7 +459,6 @@ function tsToDateInput(ts) {
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
-
 function tsToTimeInput(ts) {
   if (!ts) return "";
   const d = ts.toDate ? ts.toDate() : new Date(ts);
@@ -407,7 +467,6 @@ function tsToTimeInput(ts) {
   const mi = String(d.getMinutes()).padStart(2, "0");
   return `${hh}:${mi}`;
 }
-
 function toMillisMaybe(v) {
   if (!v) return 0;
   if (v?.toMillis) return v.toMillis();
@@ -416,16 +475,19 @@ function toMillisMaybe(v) {
   return Number.isNaN(ms) ? 0 : ms;
 }
 
+function formatLectureText(lec) {
+  const d = lec?.dateTime ? tsToDateInput(lec.dateTime) : "";
+  const t = lec?.dateTime ? tsToTimeInput(lec.dateTime) : "";
+  if (d && t) return `${d} ${t}`;
+  if (d) return d;
+  return "-";
+}
+
 /** 영구데이터(정본) */
-const base = ref({
-  exhibitions: [],
-  lectures: [],
-});
+const base = ref({ exhibitions: [], lectures: [] });
 
 async function loadLatestJson() {
   try {
-    // ✅ FIX: GH Pages 대응 (절대경로 "/data/..." 금지)
-    // import.meta.env.BASE_URL 예) "/website/" 형태로 들어올 수 있음
     const baseUrl = import.meta.env.BASE_URL || "/";
     const url = `${baseUrl}data/exhibitions.json`;
 
@@ -443,7 +505,7 @@ async function loadLatestJson() {
   }
 }
 
-/** Firestore 오버레이(임시 기록) */
+/** Firestore 오버레이 */
 const exOverlay = ref([]);
 const lecOverlay = ref([]);
 
@@ -458,9 +520,8 @@ function mergeById(baseArr, overlayArr) {
 
   (overlayArr || []).forEach((x) => {
     if (!x || !x.id) return;
-    if (x.deleted) {
-      map.delete(x.id);
-    } else {
+    if (x.deleted) map.delete(x.id);
+    else {
       const prev = map.get(x.id) || {};
       map.set(x.id, { ...prev, ...x, id: x.id });
     }
@@ -469,7 +530,6 @@ function mergeById(baseArr, overlayArr) {
   return Array.from(map.values());
 }
 
-/** ✅ 최신 날짜가 위로: startDate(우선) → endDate → updatedAt/createdAt 순 */
 function exhibitionSortKey(x) {
   const a =
     toMillisMaybe(x.startDate) ||
@@ -498,7 +558,6 @@ const mergedLectures = computed(() => {
 
 const mergedExhibitions = computed(() => {
   const out = mergeById(base.value.exhibitions, exOverlay.value);
-
   return out
     .filter((x) => x && x.id && !x.deleted)
     .map((x) => {
@@ -523,26 +582,92 @@ const mergedExhibitions = computed(() => {
     .sort((a, b) => exhibitionSortKey(b) - exhibitionSortKey(a));
 });
 
-/** ✅ 탭 + 검색 필터 */
-const filtered = computed(() => {
+/** ✅ 카드 목록 생성 규칙
+ * - 전시: 항상 전시 카드 1개
+ * - 전시+특강: 전시 카드 + (연결 특강 카드) 1개
+ * - 특강만: lecture.exhibitionId 없는 특강을 특강 카드로 표시(전용 폼에서 만든 것)
+ */
+const cards = computed(() => {
+  const exMap = new Map(mergedExhibitions.value.map((x) => [x.id, x]));
+
+  const list = [];
+
+  // 전시 카드
+  mergedExhibitions.value.forEach((ex) => {
+    list.push({
+      key: `ex:${ex.id}`,
+      type: "exhibition",
+      id: ex.id,
+      title: ex.title,
+      sub1: ex.artistName || "-",
+      sub2: ex.periodText,
+      imageUrl: ex.imageUrl || "",
+      hasLecture: !!ex.hasLecture,
+    });
+  });
+
+  // 특강 카드 (전시 연결형 + 단독형)
+  mergedLectures.value.forEach((lec) => {
+    const exId = lec.exhibitionId || "";
+    const ex = exId ? exMap.get(exId) : null;
+
+    // 전시 연결형: 전시가 있고, 전시가 hasLecture=true인 경우에만 "같이 있는" 특강으로 노출
+    const isLinked =
+      !!exId && !!ex && !!ex.hasLecture && (ex.lectureId ? ex.lectureId === lec.id : true);
+
+    // 단독형: exhibitionId가 비어있으면 노출
+    const isStandalone = !exId;
+
+    if (!isLinked && !isStandalone) return;
+
+    const fallbackImage = ex?.imageUrl || "";
+    list.push({
+      key: `lec:${lec.id}`,
+      type: "lecture",
+      id: lec.id,
+      exhibitionId: exId || "",
+      title: lec.title || "",
+      sub1: lec.instructor || "-",
+      sub2: formatLectureText(lec),
+      imageUrl: (lec.imageUrl || "").trim() || fallbackImage,
+      hasLecture: false,
+    });
+  });
+
+  // 최신순: 전시/특강 각자 날짜 기반으로 섞어서 정렬
+  function cardSortKey(c) {
+    if (c.type === "exhibition") {
+      const ex = mergedExhibitions.value.find((x) => x.id === c.id);
+      return ex ? exhibitionSortKey(ex) : 0;
+    }
+    const lec = mergedLectures.value.find((x) => x.id === c.id);
+    return (
+      toMillisMaybe(lec?.dateTime) ||
+      toMillisMaybe(lec?.updatedAt) ||
+      toMillisMaybe(lec?.createdAt) ||
+      0
+    );
+  }
+
+  return list.sort((a, b) => cardSortKey(b) - cardSortKey(a));
+});
+
+/** ✅ 탭 + 검색 */
+const filteredCards = computed(() => {
   const s = (qText.value || "").trim().toLowerCase();
 
-  let arr = mergedExhibitions.value;
+  let arr = cards.value;
 
-  if (filterTab.value === "lecture") {
-    arr = arr.filter((x) => !!x.hasLecture);
-  } else if (filterTab.value === "exhibition") {
-    arr = arr.filter((x) => !x.hasLecture);
-  }
+  if (filterTab.value === "exhibition") arr = arr.filter((x) => x.type === "exhibition");
+  if (filterTab.value === "lecture") arr = arr.filter((x) => x.type === "lecture");
 
   if (!s) return arr;
 
   return arr.filter((x) => {
     return (
       (x.title || "").toLowerCase().includes(s) ||
-      (x.artistName || "").toLowerCase().includes(s) ||
-      (x.cardName || "").toLowerCase().includes(s) ||
-      (x.periodText || "").toLowerCase().includes(s)
+      (x.sub1 || "").toLowerCase().includes(s) ||
+      (x.sub2 || "").toLowerCase().includes(s)
     );
   });
 });
@@ -589,188 +714,268 @@ function findLectureByExhibitionId(exId) {
   return mergedLectures.value.find((x) => x.exhibitionId === exId) || null;
 }
 
-/** 선택 */
-async function select(id) {
+/** ✅ 새 전시 / 새 특강 */
+function newExhibition() {
   clearMsgs();
-  selectedId.value = id;
-
-  try {
-    const ex = findExById(id);
-    if (!ex) {
-      setErr("전시 데이터를 찾을 수 없습니다.");
-      return;
-    }
-
-    form.title = ex.title || "";
-    form.artistName = ex.artistName || "";
-    form.cardName = ex.cardName || "";
-    form.imageUrl = ex.imageUrl || "";
-    form.startDate = ex.startDate ? tsToDateInput(ex.startDate) : "";
-    form.endDate = ex.endDate ? tsToDateInput(ex.endDate) : "";
-
-    form.hasLecture = !!ex.hasLecture;
-    form.lectureId = ex.lectureId || "";
-
-    lecture.title = "";
-    lecture.instructor = "";
-    lecture.date = "";
-    lecture.time = "";
-    lecture.imageUrl = "";
-
-    if (form.hasLecture) {
-      let lec = null;
-
-      if (form.lectureId) lec = findLectureById(form.lectureId);
-      if (!lec) {
-        lec = findLectureByExhibitionId(id);
-        if (lec?.id) form.lectureId = lec.id;
-      }
-
-      if (lec) {
-        lecture.title = lec.title || "";
-        lecture.instructor = lec.instructor || "";
-        lecture.imageUrl = lec.imageUrl || "";
-        lecture.date = lec.dateTime ? tsToDateInput(lec.dateTime) : "";
-        lecture.time = lec.dateTime ? tsToTimeInput(lec.dateTime) : "";
-      }
-    }
-  } catch (e) {
-    setErr(e?.message || "전시 로딩 중 오류가 발생했습니다.");
-  }
-}
-
-/** 폼 초기화 */
-function resetForm() {
-  clearMsgs();
+  mode.value = "exhibition";
+  selectedKey.value = "";
+  selectedType.value = "";
   selectedId.value = "";
 
-  form.title = "";
-  form.artistName = "";
-  form.cardName = "";
-  form.startDate = "";
-  form.endDate = "";
-  form.imageUrl = "";
-  form.hasLecture = false;
-  form.lectureId = "";
+  exForm.title = "";
+  exForm.artistName = "";
+  exForm.cardName = "";
+  exForm.startDate = "";
+  exForm.endDate = "";
+  exForm.imageUrl = "";
+  exForm.hasLecture = false;
+  exForm.lectureId = "";
 
-  lecture.title = "";
-  lecture.instructor = "";
-  lecture.date = "";
-  lecture.time = "";
-  lecture.imageUrl = "";
+  lecInEx.title = "";
+  lecInEx.instructor = "";
+  lecInEx.date = "";
+  lecInEx.time = "";
+  lecInEx.imageUrl = "";
+
+  // 특강전용 폼도 초기화
+  lecOnly.title = "";
+  lecOnly.instructor = "";
+  lecOnly.date = "";
+  lecOnly.time = "";
+  lecOnly.imageUrl = "";
 }
 
-/** 저장: Firestore(임시 기록)에만 저장 */
+function newLecture() {
+  clearMsgs();
+  mode.value = "lecture";
+  selectedKey.value = "";
+  selectedType.value = "";
+  selectedId.value = "";
+
+  // 특강 전용 폼 초기화
+  lecOnly.title = "";
+  lecOnly.instructor = "";
+  lecOnly.date = "";
+  lecOnly.time = "";
+  lecOnly.imageUrl = "";
+
+  // 전시폼은 건드리지 않음(하지만 선택 해제는 함)
+  exForm.lectureId = "";
+  lecInEx.title = "";
+  lecInEx.instructor = "";
+  lecInEx.date = "";
+  lecInEx.time = "";
+  lecInEx.imageUrl = "";
+}
+
+/** ✅ 카드 선택: 전시카드는 전시가 메인 */
+async function selectCard(item) {
+  clearMsgs();
+  selectedKey.value = item.key;
+  selectedType.value = item.type;
+  selectedId.value = item.id;
+
+  if (item.type === "exhibition") {
+    mode.value = "exhibition";
+
+    const ex = findExById(item.id);
+    if (!ex) return setErr("전시 데이터를 찾을 수 없습니다.");
+
+    exForm.title = ex.title || "";
+    exForm.artistName = ex.artistName || "";
+    exForm.cardName = ex.cardName || "";
+    exForm.imageUrl = ex.imageUrl || "";
+    exForm.startDate = ex.startDate ? tsToDateInput(ex.startDate) : "";
+    exForm.endDate = ex.endDate ? tsToDateInput(ex.endDate) : "";
+    exForm.hasLecture = !!ex.hasLecture;
+    exForm.lectureId = ex.lectureId || "";
+
+    // 전시에 특강이 있으면 같이 로드(하지만 화면은 전시폼 유지)
+    lecInEx.title = "";
+    lecInEx.instructor = "";
+    lecInEx.date = "";
+    lecInEx.time = "";
+    lecInEx.imageUrl = "";
+
+    if (exForm.hasLecture) {
+      let lec = null;
+      if (exForm.lectureId) lec = findLectureById(exForm.lectureId);
+      if (!lec) {
+        lec = findLectureByExhibitionId(item.id);
+        if (lec?.id) exForm.lectureId = lec.id;
+      }
+      if (lec) {
+        lecInEx.title = lec.title || "";
+        lecInEx.instructor = lec.instructor || "";
+        lecInEx.imageUrl = lec.imageUrl || "";
+        lecInEx.date = lec.dateTime ? tsToDateInput(lec.dateTime) : "";
+        lecInEx.time = lec.dateTime ? tsToTimeInput(lec.dateTime) : "";
+      }
+    }
+    return;
+  }
+
+  // lecture 카드 선택 → 특강 전용 폼
+  mode.value = "lecture";
+
+  const lec = findLectureById(item.id);
+  if (!lec) return setErr("특강 데이터를 찾을 수 없습니다.");
+
+  // 전시 연결 특강도 목록에 보이지만, 편집은 여기서 가능(단, 전시에 연결/해제는 전시폼에서 하는 구조 유지)
+  lecOnly.title = lec.title || "";
+  lecOnly.instructor = lec.instructor || "";
+  lecOnly.imageUrl = lec.imageUrl || "";
+  lecOnly.date = lec.dateTime ? tsToDateInput(lec.dateTime) : "";
+  lecOnly.time = lec.dateTime ? tsToTimeInput(lec.dateTime) : "";
+}
+
+/** ✅ 저장 가능 여부 */
+const canSave = computed(() => {
+  if (saving.value) return false;
+
+  if (mode.value === "exhibition") {
+    const exTitleOk = (exForm.title || "").trim().length > 0;
+    if (!exTitleOk) return false;
+
+    if (!exForm.hasLecture) return true;
+
+    const lecTitleOk = (lecInEx.title || "").trim().length > 0;
+    const lecDateOk = !!lecInEx.date;
+    return lecTitleOk && lecDateOk;
+  }
+
+  // lecture-only
+  const tOk = (lecOnly.title || "").trim().length > 0;
+  const dOk = !!lecOnly.date;
+  return tOk && dOk;
+});
+
+/** ✅ 저장 */
 async function handleSave() {
   clearMsgs();
 
-  // ✅ FIX: 특강만 등록 시 전시 제목이 없어도 통과
-  const exTitle = (form.title || "").trim();
-  const lecTitle = (lecture.title || "").trim();
-
-  if (!form.hasLecture) {
-    if (!exTitle) {
-      setErr("전시 제목은 필수입니다.");
-      return;
-    }
-  } else {
-    if (!lecTitle) {
-      setErr("특강명이 필요합니다.");
-      return;
-    }
-    if (!lecture.date) {
-      setErr("특강 날짜가 필요합니다.");
-      return;
-    }
+  if (!canSave.value) {
+    if (mode.value === "exhibition") setErr("전시 제목은 필수입니다.");
+    else setErr("특강명/특강 날짜는 필수입니다.");
+    return;
   }
 
   saving.value = true;
 
   try {
-    // ✅ FIX: 전시 없이 특강만 입력한 경우, 전시 제목은 특강명으로 자동 채움(기존 데이터 구조 유지)
-    const finalExTitle = exTitle || (form.hasLecture ? lecTitle : "");
-    const finalStartDate = form.startDate || (form.hasLecture ? lecture.date : "");
-    const finalEndDate = form.endDate || "";
-
-    const exPayload = {
-      deleted: false,
-      title: (finalExTitle || "").trim(),
-      artistName: (form.artistName || "").trim(),
-      cardName: (form.cardName || "").trim(),
-      imageUrl: (form.imageUrl || "").trim(),
-      startDate: dateToTimestamp(finalStartDate),
-      endDate: dateToTimestamp(finalEndDate),
-      hasLecture: !!form.hasLecture,
-      updatedAt: serverTimestamp(),
-    };
-
-    let exId = selectedId.value;
-
-    if (!exId) {
-      const created = await addDoc(collection(db, "exhibitions"), {
-        ...exPayload,
-        createdAt: serverTimestamp(),
-      });
-      exId = created.id;
-      selectedId.value = exId;
-    } else {
-      await setDoc(doc(db, "exhibitions", exId), exPayload, { merge: true });
-    }
-
-    if (form.hasLecture) {
-      const dt = lectureDateTimeToTimestamp(lecture.date, lecture.time);
-
-      const lecPayload = {
+    if (mode.value === "exhibition") {
+      // 전시 저장(전시가 메인)
+      const exPayload = {
         deleted: false,
-        exhibitionId: exId,
-        title: (lecture.title || "").trim(),
-        instructor: (lecture.instructor || "").trim(),
-        imageUrl: (lecture.imageUrl || "").trim(),
-        dateTime: dt,
+        title: (exForm.title || "").trim(),
+        artistName: (exForm.artistName || "").trim(),
+        cardName: (exForm.cardName || "").trim(),
+        imageUrl: (exForm.imageUrl || "").trim(),
+        startDate: dateToTimestamp(exForm.startDate),
+        endDate: dateToTimestamp(exForm.endDate),
+        hasLecture: !!exForm.hasLecture,
         updatedAt: serverTimestamp(),
       };
 
-      let lecId = form.lectureId;
-
-      if (!lecId) {
-        const createdLecture = await addDoc(collection(db, "lectures"), {
-          ...lecPayload,
+      let exId = selectedType.value === "exhibition" ? selectedId.value : "";
+      if (!exId) {
+        const created = await addDoc(collection(db, "exhibitions"), {
+          ...exPayload,
           createdAt: serverTimestamp(),
         });
-        lecId = createdLecture.id;
-        form.lectureId = lecId;
-
-        await setDoc(
-          doc(db, "exhibitions", exId),
-          { hasLecture: true, lectureId: lecId, deleted: false, updatedAt: serverTimestamp() },
-          { merge: true }
-        );
+        exId = created.id;
+        selectedKey.value = `ex:${exId}`;
+        selectedType.value = "exhibition";
+        selectedId.value = exId;
       } else {
-        await setDoc(doc(db, "lectures", lecId), lecPayload, { merge: true });
+        await setDoc(doc(db, "exhibitions", exId), exPayload, { merge: true });
+      }
+
+      // 전시+특강
+      if (exForm.hasLecture) {
+        const dt = lectureDateTimeToTimestamp(lecInEx.date, lecInEx.time);
+
+        const lecPayload = {
+          deleted: false,
+          exhibitionId: exId,
+          title: (lecInEx.title || "").trim(),
+          instructor: (lecInEx.instructor || "").trim(),
+          imageUrl: (lecInEx.imageUrl || "").trim(),
+          dateTime: dt,
+          updatedAt: serverTimestamp(),
+        };
+
+        let lecId = exForm.lectureId;
+
+        if (!lecId) {
+          const createdLecture = await addDoc(collection(db, "lectures"), {
+            ...lecPayload,
+            createdAt: serverTimestamp(),
+          });
+          lecId = createdLecture.id;
+          exForm.lectureId = lecId;
+        } else {
+          await setDoc(doc(db, "lectures", lecId), lecPayload, { merge: true });
+        }
+
         await setDoc(
           doc(db, "exhibitions", exId),
           { hasLecture: true, lectureId: lecId, deleted: false, updatedAt: serverTimestamp() },
           { merge: true }
         );
-      }
-    } else {
-      if (form.lectureId) {
+
+        setOk("저장되었습니다. (전시 + 특강)");
+      } else {
+        // 특강 연결 해제: 기존 연결 특강은 deleted 처리
+        if (exForm.lectureId) {
+          await setDoc(
+            doc(db, "lectures", exForm.lectureId),
+            { deleted: true, updatedAt: serverTimestamp(), exhibitionId: exId },
+            { merge: true }
+          );
+          exForm.lectureId = "";
+        }
+
         await setDoc(
-          doc(db, "lectures", form.lectureId),
-          { deleted: true, updatedAt: serverTimestamp(), exhibitionId: exId },
+          doc(db, "exhibitions", exId),
+          { hasLecture: false, lectureId: "", deleted: false, updatedAt: serverTimestamp() },
           { merge: true }
         );
-        form.lectureId = "";
+
+        setOk("저장되었습니다. (전시)");
       }
 
-      await setDoc(
-        doc(db, "exhibitions", exId),
-        { hasLecture: false, lectureId: "", deleted: false, updatedAt: serverTimestamp() },
-        { merge: true }
-      );
+      return;
     }
 
-    setOk("저장되었습니다. (임시 기록에 반영됨)");
+    // ✅ 특강 전용 저장(전시 연결 없음)
+    const dt = lectureDateTimeToTimestamp(lecOnly.date, lecOnly.time);
+
+    const lecPayload = {
+      deleted: false,
+      exhibitionId: "", // 단독 특강
+      title: (lecOnly.title || "").trim(),
+      instructor: (lecOnly.instructor || "").trim(),
+      imageUrl: (lecOnly.imageUrl || "").trim(),
+      dateTime: dt,
+      updatedAt: serverTimestamp(),
+    };
+
+    let lecId = selectedType.value === "lecture" ? selectedId.value : "";
+    if (!lecId) {
+      const createdLecture = await addDoc(collection(db, "lectures"), {
+        ...lecPayload,
+        createdAt: serverTimestamp(),
+      });
+      lecId = createdLecture.id;
+      selectedKey.value = `lec:${lecId}`;
+      selectedType.value = "lecture";
+      selectedId.value = lecId;
+    } else {
+      await setDoc(doc(db, "lectures", lecId), lecPayload, { merge: true });
+    }
+
+    setOk("저장되었습니다. (특강)");
   } catch (e) {
     setErr(e?.message || "저장 중 오류가 발생했습니다.");
   } finally {
@@ -778,13 +983,11 @@ async function handleSave() {
   }
 }
 
-/** 삭제: Firestore에 삭제 요청만 기록(deleted:true) */
+/** ✅ 삭제 */
 async function handleDelete() {
   clearMsgs();
 
-  const exId = selectedId.value;
-  if (!exId) return;
-
+  if (!selectedKey.value || !selectedType.value || !selectedId.value) return;
   if (!confirm("정말 삭제할까요? (정해진 시간 발행 시 영구데이터에서도 삭제됩니다)")) return;
 
   saving.value = true;
@@ -792,34 +995,52 @@ async function handleDelete() {
   try {
     const batch = writeBatch(db);
 
+    if (selectedType.value === "exhibition") {
+      const exId = selectedId.value;
+
+      batch.set(
+        doc(db, "exhibitions", exId),
+        { deleted: true, updatedAt: serverTimestamp() },
+        { merge: true }
+      );
+
+      // 연결 특강(lectureId + exhibitionId 매칭)도 삭제 처리
+      const ex = findExById(exId);
+      if (ex?.lectureId) {
+        batch.set(
+          doc(db, "lectures", ex.lectureId),
+          { deleted: true, updatedAt: serverTimestamp(), exhibitionId: exId },
+          { merge: true }
+        );
+      }
+
+      const lecQ = query(collection(db, "lectures"), where("exhibitionId", "==", exId));
+      const lecSnap = await getDocs(lecQ);
+      lecSnap.forEach((d) => {
+        batch.set(
+          doc(db, "lectures", d.id),
+          { deleted: true, updatedAt: serverTimestamp(), exhibitionId: exId },
+          { merge: true }
+        );
+      });
+
+      await batch.commit();
+      newExhibition();
+      setOk("삭제 요청이 기록되었습니다. (전시 + 연결 특강)");
+      return;
+    }
+
+    // lecture 카드 삭제(단독/연결 특강 모두 가능)
+    const lecId = selectedId.value;
     batch.set(
-      doc(db, "exhibitions", exId),
+      doc(db, "lectures", lecId),
       { deleted: true, updatedAt: serverTimestamp() },
       { merge: true }
     );
-
-    if (form.lectureId) {
-      batch.set(
-        doc(db, "lectures", form.lectureId),
-        { deleted: true, updatedAt: serverTimestamp(), exhibitionId: exId },
-        { merge: true }
-      );
-    }
-
-    const lecQ = query(collection(db, "lectures"), where("exhibitionId", "==", exId));
-    const lecSnap = await getDocs(lecQ);
-    lecSnap.forEach((d) => {
-      batch.set(
-        doc(db, "lectures", d.id),
-        { deleted: true, updatedAt: serverTimestamp(), exhibitionId: exId },
-        { merge: true }
-      );
-    });
-
     await batch.commit();
 
-    resetForm();
-    setOk("삭제 요청이 기록되었습니다. (발행 시 영구데이터 반영)");
+    newLecture();
+    setOk("삭제 요청이 기록되었습니다. (특강)");
   } catch (e) {
     setErr(e?.message || "삭제 처리 중 오류가 발생했습니다.");
   } finally {
