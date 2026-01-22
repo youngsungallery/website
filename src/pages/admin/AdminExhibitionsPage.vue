@@ -335,7 +335,28 @@ const lecture = reactive({
   imageUrl: "",
 });
 
-const canSave = computed(() => (form.title || "").trim().length > 0);
+/**
+ * ✅ FIX: "전시 없이 특강만" 저장 허용
+ * - 전시 제목이 비어있고 hasLecture=true인 경우:
+ *   canSave는 특강 필수값(특강명/날짜) 기준으로 활성화
+ * - 저장 시 전시 문서가 필요하므로(기존 구조 유지):
+ *   전시 제목이 없으면 "특강명"을 전시 제목으로 자동 사용
+ */
+const canSave = computed(() => {
+  if (saving.value) return false;
+
+  const exTitleOk = (form.title || "").trim().length > 0;
+
+  if (!form.hasLecture) {
+    return exTitleOk;
+  }
+
+  const lecTitleOk = (lecture.title || "").trim().length > 0;
+  const lecDateOk = !!lecture.date;
+
+  // 특강만 등록 가능
+  return (exTitleOk || (lecTitleOk && lecDateOk)) && lecTitleOk && lecDateOk;
+});
 
 function clearMsgs() {
   errorMsg.value = "";
@@ -643,13 +664,17 @@ function resetForm() {
 async function handleSave() {
   clearMsgs();
 
-  if (!canSave.value) {
-    setErr("전시 제목은 필수입니다.");
-    return;
-  }
+  // ✅ FIX: 특강만 등록 시 전시 제목이 없어도 통과
+  const exTitle = (form.title || "").trim();
+  const lecTitle = (lecture.title || "").trim();
 
-  if (form.hasLecture) {
-    if (!(lecture.title || "").trim()) {
+  if (!form.hasLecture) {
+    if (!exTitle) {
+      setErr("전시 제목은 필수입니다.");
+      return;
+    }
+  } else {
+    if (!lecTitle) {
       setErr("특강명이 필요합니다.");
       return;
     }
@@ -662,14 +687,19 @@ async function handleSave() {
   saving.value = true;
 
   try {
+    // ✅ FIX: 전시 없이 특강만 입력한 경우, 전시 제목은 특강명으로 자동 채움(기존 데이터 구조 유지)
+    const finalExTitle = exTitle || (form.hasLecture ? lecTitle : "");
+    const finalStartDate = form.startDate || (form.hasLecture ? lecture.date : "");
+    const finalEndDate = form.endDate || "";
+
     const exPayload = {
       deleted: false,
-      title: (form.title || "").trim(),
+      title: (finalExTitle || "").trim(),
       artistName: (form.artistName || "").trim(),
       cardName: (form.cardName || "").trim(),
       imageUrl: (form.imageUrl || "").trim(),
-      startDate: dateToTimestamp(form.startDate),
-      endDate: dateToTimestamp(form.endDate),
+      startDate: dateToTimestamp(finalStartDate),
+      endDate: dateToTimestamp(finalEndDate),
       hasLecture: !!form.hasLecture,
       updatedAt: serverTimestamp(),
     };
