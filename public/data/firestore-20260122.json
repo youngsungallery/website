@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "meta": {
     "timezone": "Asia/Seoul",
@@ -78,4 +79,20 @@
     ],
     "lectures": []
   }
+=======
+{
+  "meta": {
+    "timezone": "Asia/Seoul",
+    "publishedAt": "2026-01-21T23:56:55.628Z",
+    "stampKST": "20260122",
+    "collections": [
+      "exhibitions",
+      "lectures"
+    ]
+  },
+  "data": {
+    "exhibitions": [],
+    "lectures": []
+  }
+>>>>>>> 87b95a0a0e851ce1dd91db7fc2668b0e413d7def
 }
