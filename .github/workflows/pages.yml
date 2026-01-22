@@ -9,9 +9,13 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: "Also export Firestore -> public/data and clear Firestore (only works with workflow_dispatch/schedule logic)"
+        description: "Export Firestore -> public/data AND clear Firestore AND commit/push"
         required: false
         default: "false"
+      deploy:
+        description: "Force build+deploy (useful when publish=false)"
+        required: false
+        default: "true"
 
 permissions:
   contents: write
@@ -24,9 +28,8 @@ concurrency:
 
 jobs:
   build_deploy:
-    # ✅ 봇이 만든 커밋(메시지에 [skip ci])으로는 push 배포를 막아서 2중 실행 방지
+    # 봇 커밋([skip ci])은 push 트리거 배포를 막아 2중 실행 방지
     if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]')
-
     runs-on: ubuntu-latest
 
     environment:
@@ -48,12 +51,7 @@ jobs:
       - name: Install
         run: npm ci
 
-      # =========================
-      # 1) Scheduled / Manual Publish (export + clear + commit/push)
-      #    - Never run on push
-      #    - schedule: always
-      #    - workflow_dispatch: only when inputs.publish == 'true'
-      # =========================
+      # 1) Publish: schedule always, workflow_dispatch only when publish=true
       - name: Publish (export + clear firestore)
         if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
         env:
@@ -75,26 +73,22 @@ jobs:
             exit 0
           fi
 
-          # ✅ 이 커밋이 push 트리거로 다시 배포를 또 돌리지 않도록 마커를 넣음
           git commit -m "chore(data): publish firestore to public/data [skip ci]"
           git push
 
           echo "changed=true" >> $GITHUB_OUTPUT
 
-      # =========================
-      # 2) Build & Deploy
-      #
+      # 2) Build & Deploy 조건
       # - push: always
+      # - schedule: only when publish changed
       # - workflow_dispatch:
-      #     - publish=true  → changed=true일 때만 (의미: 발행 반영이 생겼을 때만)
-      #     - publish=false → 항상 (수동 재배포 용도)
-      # - schedule: changed=true일 때만
-      # =========================
+      #     - publish=true  -> only when changed
+      #     - publish=false -> inputs.deploy=true면 강제 배포
       - name: Build (GH Pages)
         if: |
           github.event_name == 'push' ||
-          (github.event_name == 'workflow_dispatch' && inputs.publish != 'true') ||
-          steps.commitstep.outputs.changed == 'true'
+          steps.commitstep.outputs.changed == 'true' ||
+          (github.event_name == 'workflow_dispatch' && inputs.publish != 'true' && inputs.deploy == 'true')
         run: npm run build:gh-pages
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
@@ -108,15 +102,15 @@ jobs:
       - name: Setup Pages
         if: |
           github.event_name == 'push' ||
-          (github.event_name == 'workflow_dispatch' && inputs.publish != 'true') ||
-          steps.commitstep.outputs.changed == 'true'
+          steps.commitstep.outputs.changed == 'true' ||
+          (github.event_name == 'workflow_dispatch' && inputs.publish != 'true' && inputs.deploy == 'true')
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         if: |
           github.event_name == 'push' ||
-          (github.event_name == 'workflow_dispatch' && inputs.publish != 'true') ||
-          steps.commitstep.outputs.changed == 'true'
+          steps.commitstep.outputs.changed == 'true' ||
+          (github.event_name == 'workflow_dispatch' && inputs.publish != 'true' && inputs.deploy == 'true')
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -124,7 +118,7 @@ jobs:
       - name: Deploy
         if: |
           github.event_name == 'push' ||
-          (github.event_name == 'workflow_dispatch' && inputs.publish != 'true') ||
-          steps.commitstep.outputs.changed == 'true'
+          steps.commitstep.outputs.changed == 'true' ||
+          (github.event_name == 'workflow_dispatch' && inputs.publish != 'true' && inputs.deploy == 'true')
         id: deployment
         uses: actions/deploy-pages@v4
