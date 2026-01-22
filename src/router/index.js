@@ -1,3 +1,4 @@
+// FILE: src/router/index.js
 import { createRouter, createWebHistory } from "vue-router";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, ADMIN_EMAIL } from "@/lib/firebase";
@@ -37,7 +38,8 @@ const routes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  // ✅ GH Pages 레포 배포 베이스 경로 고정 (https://youngsungallery.github.io/website/)
+  history: createWebHistory("/website/"),
   routes,
 });
 
