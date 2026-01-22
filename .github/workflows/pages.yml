@@ -5,15 +5,15 @@ on:
   push:
     branches: ["main"]
 
-  # ✅ 스케줄 발행(원하면 주기 바꾸면 됨)
+  # ✅ 스케줄 발행 (KST 00:00)
   schedule:
-    - cron: "0 15 * * *" # KST 00:00
+    - cron: "0 15 * * *"
 
   # ✅ 수동 실행(테스트/긴급 발행)
   workflow_dispatch:
     inputs:
       publish:
-        description: "Export Firestore -> public/data AND clear Firestore AND commit/push"
+        description: "Export Firestore -> public/data (MERGE, keep existing) AND clear Firestore AND commit/push"
         required: false
         default: "false"
         type: choice
@@ -64,12 +64,12 @@ jobs:
         run: npm ci
 
       # =========================
-      # 1) Publish (export + clear + commit/push)
+      # 1) Publish (export+merge) + clear firestore + commit/push
       # - schedule: 항상 실행
       # - workflow_dispatch: inputs.publish == 'true' 일 때만 실행
       # - push: 절대 실행 안 함
       # =========================
-      - name: Publish (export + clear firestore) + Commit/Push
+      - name: Publish (export+merge) + Clear Firestore + Commit/Push
         id: publishstep
         if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true')
         env:
