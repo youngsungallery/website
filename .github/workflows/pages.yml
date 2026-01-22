@@ -1,5 +1,5 @@
-# .github/workflows/pages.yml
-name: Publish (Scheduled) + Deploy to GitHub Pages
+# /.github/workflows/pages.yml
+name: Publish (Scheduled/Manual) + Deploy to GitHub Pages
 
 on:
   push:
@@ -12,10 +12,18 @@ on:
         description: "Export Firestore -> public/data AND clear Firestore AND commit/push"
         required: false
         default: "false"
-      deploy:
-        description: "Force build+deploy (useful when publish=false)"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      force_deploy:
+        description: "Force build+deploy even when publish=false (manual test)"
         required: false
         default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
 
 permissions:
   contents: write
@@ -28,8 +36,6 @@ concurrency:
 
 jobs:
   build_deploy:
-    # 봇 커밋([skip ci])은 push 트리거 배포를 막아 2중 실행 방지
-    if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip ci]')
     runs-on: ubuntu-latest
 
     environment:
@@ -51,15 +57,20 @@ jobs:
       - name: Install
         run: npm ci
 
-      # 1) Publish: schedule always, workflow_dispatch only when publish=true
+      # =========================
+      # 1) Publish (export + clear + commit/push)
+      #    - schedule: 항상 실행
+      #    - workflow_dispatch: publish == 'true'일 때만 실행
+      #    - push: 절대 실행 안 함
+      # =========================
       - name: Publish (export + clear firestore)
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true')
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node scripts/publish-firestore-to-public.mjs
 
       - name: Commit & push if changed (published data)
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.publish == 'true')
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true')
         id: commitstep
         run: |
           git config user.name "youngsun-publish-bot"
@@ -73,22 +84,26 @@ jobs:
             exit 0
           fi
 
+          # GitHub Actions skip 키워드(중복 실행 방지)
           git commit -m "chore(data): publish firestore to public/data [skip ci]"
           git push
 
           echo "changed=true" >> $GITHUB_OUTPUT
 
+      # =========================
       # 2) Build & Deploy 조건
-      # - push: always
-      # - schedule: only when publish changed
-      # - workflow_dispatch:
-      #     - publish=true  -> only when changed
-      #     - publish=false -> inputs.deploy=true면 강제 배포
+      #    - push: 항상 배포
+      #    - schedule: publish 결과가 changed=true일 때만 배포(데이터 변경 없으면 스킵)
+      #    - workflow_dispatch:
+      #        publish=true  -> changed=true일 때 배포
+      #        publish=false -> force_deploy=true면 배포(수동 빌드 테스트용)
+      # =========================
       - name: Build (GH Pages)
         if: |
           github.event_name == 'push' ||
-          steps.commitstep.outputs.changed == 'true' ||
-          (github.event_name == 'workflow_dispatch' && inputs.publish != 'true' && inputs.deploy == 'true')
+          (github.event_name == 'schedule' && steps.commitstep.outputs.changed == 'true') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' && steps.commitstep.outputs.changed == 'true') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'true' && github.event.inputs.force_deploy == 'true')
         run: npm run build:gh-pages
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
@@ -102,15 +117,17 @@ jobs:
       - name: Setup Pages
         if: |
           github.event_name == 'push' ||
-          steps.commitstep.outputs.changed == 'true' ||
-          (github.event_name == 'workflow_dispatch' && inputs.publish != 'true' && inputs.deploy == 'true')
+          (github.event_name == 'schedule' && steps.commitstep.outputs.changed == 'true') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' && steps.commitstep.outputs.changed == 'true') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'true' && github.event.inputs.force_deploy == 'true')
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         if: |
           github.event_name == 'push' ||
-          steps.commitstep.outputs.changed == 'true' ||
-          (github.event_name == 'workflow_dispatch' && inputs.publish != 'true' && inputs.deploy == 'true')
+          (github.event_name == 'schedule' && steps.commitstep.outputs.changed == 'true') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' && steps.commitstep.outputs.changed == 'true') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'true' && github.event.inputs.force_deploy == 'true')
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -118,7 +135,8 @@ jobs:
       - name: Deploy
         if: |
           github.event_name == 'push' ||
-          steps.commitstep.outputs.changed == 'true' ||
-          (github.event_name == 'workflow_dispatch' && inputs.publish != 'true' && inputs.deploy == 'true')
+          (github.event_name == 'schedule' && steps.commitstep.outputs.changed == 'true') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true' && steps.commitstep.outputs.changed == 'true') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.publish != 'true' && github.event.inputs.force_deploy == 'true')
         id: deployment
         uses: actions/deploy-pages@v4
