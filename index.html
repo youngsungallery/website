@@ -1,8 +1,19 @@
-<!-- index.html -->
+<!-- FILE: index.html -->
 <!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- ✅ GH Pages(history mode) 새로고침 404 방지: 404.html에서 넘어온 p 파라미터를 원래 경로로 복원 -->
+    <script>
+      (function () {
+        var p = new URLSearchParams(window.location.search).get("p");
+        if (p) {
+          history.replaceState(null, "", decodeURIComponent(p));
+        }
+      })();
+    </script>
+
     <link rel="icon" type="image/png" href="%BASE_URL%favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>영선갤러리</title>
@@ -18,7 +29,7 @@
     <style>
       body {
         margin: 0;
-        font-family: 'Noto Sans KR', sans-serif;
+        font-family: "Noto Sans KR", sans-serif;
         background-color: #fff;
         color: #333;
       }
