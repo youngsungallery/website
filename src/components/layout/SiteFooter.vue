@@ -1,3 +1,4 @@
+<!-- FILE: src/components/layout/SiteFooter.vue -->
 <template>
   <footer class="site-footer">
     <div class="footer-inner">
@@ -77,14 +78,29 @@ import { auth } from "@/lib/firebase";
 const route = useRoute();
 const router = useRouter();
 
+/**
+ * ✅ GH Pages repo base 대응
+ * - 현재 배포: https://youngsungallery.github.io/website/
+ * - router history base도 /website/로 고정했으니, 여기선 "절대경로(/admin)"로 push 하면 자동으로 /website/admin 으로 감
+ * - 다만 혹시 base 설정이 바뀌어도 안전하게, router.resolve를 써서 실제 href를 생성해 이동
+ */
+
+function go(to) {
+  // router base를 고려한 최종 href를 얻어서 이동
+  const href = router.resolve(to).href;
+  // resolve().href 는 보통 "/website/admin" 같은 형태
+  window.history.pushState({}, "", href);
+  router.replace(to);
+}
+
 /* 관리자 페이지 여부 */
 const isAdmin = computed(() => route.path.startsWith("/admin"));
 
 /* 버튼 텍스트 */
 const adminLink = computed(() => {
   return isAdmin.value
-    ? { label: "사이트로 나가기", to: "/" }
-    : { label: "관리자접속", to: "/admin" };
+    ? { label: "사이트로 나가기", to: { path: "/" } }
+    : { label: "관리자접속", to: { path: "/admin" } };
 });
 
 /* 클릭 동작
@@ -92,7 +108,8 @@ const adminLink = computed(() => {
    - 관리자에서: 무조건 로그아웃 후 홈으로 */
 async function handleAdminClick() {
   if (!isAdmin.value) {
-    router.push("/admin");
+    // ✅ base(/website/) 포함된 경로로 안전 이동
+    router.push(adminLink.value.to);
     return;
   }
 
@@ -100,8 +117,8 @@ async function handleAdminClick() {
   try {
     await signOut(auth);
   } finally {
-    // history 남기기 싫으면 replace 추천
-    router.replace("/");
+    // ✅ base(/website/) 포함된 경로로 안전 이동
+    router.replace(adminLink.value.to);
   }
 }
 
