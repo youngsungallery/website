@@ -26,67 +26,13 @@
       </div>
     </header>
 
-    <section class="layout">
-      <!-- LEFT: 전시 목록/검색 -->
-      <aside class="panel list-panel">
-        <div class="panel-head">
-          <div class="panel-title">전시 목록</div>
-          <div class="panel-sub">검색 후 선택하여 수정</div>
-        </div>
-
-        <div class="panel-body">
-          <input
-            v-model="q"
-            class="search"
-            type="text"
-            placeholder="전시 제목/작가/카드 이름 검색"
-          />
-
-          <div class="list">
-            <button
-              v-for="item in filtered"
-              :key="item.id"
-              type="button"
-              class="list-item"
-              :class="{ active: selectedId === item.id }"
-              @click="select(item.id)"
-            >
-              <div class="li-title">{{ item.title || "(제목 없음)" }}</div>
-              <div class="li-meta">
-                <span>{{ item.artistName || "-" }}</span>
-                <span class="dot">·</span>
-                <span>{{ item.periodText }}</span>
-              </div>
-              <div class="li-badges">
-                <span v-if="item.hasLecture" class="badge">특강</span>
-                <span v-if="item.imageUrl" class="badge ghost">포스터</span>
-              </div>
-            </button>
-
-            <div v-if="!loading && filtered.length === 0" class="empty">
-              전시 데이터가 없습니다.
-            </div>
-            <div v-if="loading" class="empty">불러오는 중...</div>
-          </div>
-        </div>
-
-        <div class="panel-foot">
-          <button
-            type="button"
-            class="btn danger subtle"
-            :disabled="!selectedId || saving"
-            @click="handleDelete"
-          >
-            {{ saving ? "처리 중..." : "삭제" }}
-          </button>
-        </div>
-      </aside>
-
-      <!-- RIGHT: 전시 폼 -->
+    <!-- ✅ 전체를 한 컬럼으로: 상단 폼 / 하단 목록 -->
+    <section class="layout single">
+      <!-- TOP: 전시 폼 -->
       <main class="panel form-panel">
         <div class="panel-head">
-          <div class="panel-title">전시 정보</div>
-          <div class="panel-sub">필수 항목부터 입력하세요</div>
+          <div class="panel-title">새 전시 / 전시 수정</div>
+          <div class="panel-sub">상단에서 입력 후 저장하세요</div>
         </div>
 
         <div class="panel-body form">
@@ -231,6 +177,99 @@
           </section>
         </div>
       </main>
+
+      <!-- BOTTOM: 전시 목록/검색 -->
+      <aside class="panel list-panel">
+        <div class="panel-head">
+          <div class="panel-title">전시 목록</div>
+          <div class="panel-sub">필터/검색 후 선택하여 수정</div>
+        </div>
+
+        <div class="panel-body list-wrap">
+          <!-- ✅ 태그 필터 -->
+          <div class="tabs" role="tablist" aria-label="전시 필터">
+            <button
+              type="button"
+              class="tab"
+              :class="{ active: filterTab === 'all' }"
+              @click="filterTab = 'all'"
+            >
+              전체
+            </button>
+            <button
+              type="button"
+              class="tab"
+              :class="{ active: filterTab === 'exhibition' }"
+              @click="filterTab = 'exhibition'"
+            >
+              전시
+            </button>
+            <button
+              type="button"
+              class="tab"
+              :class="{ active: filterTab === 'lecture' }"
+              @click="filterTab = 'lecture'"
+            >
+              특강
+            </button>
+          </div>
+
+          <div class="search-row">
+            <input
+              v-model="q"
+              class="search"
+              type="text"
+              placeholder="전시 제목/작가/카드 이름 검색"
+            />
+          </div>
+
+          <div class="list">
+            <button
+              v-for="item in filtered"
+              :key="item.id"
+              type="button"
+              class="list-item row"
+              :class="{ active: selectedId === item.id }"
+              @click="select(item.id)"
+            >
+              <!-- ✅ 썸네일을 카드 왼쪽에 -->
+              <div class="thumb">
+                <img v-if="item.imageUrl" :src="item.imageUrl" alt="" loading="lazy" />
+                <div v-else class="thumb-ph"></div>
+              </div>
+
+              <div class="li-main">
+                <div class="li-title">{{ item.title || "(제목 없음)" }}</div>
+                <div class="li-meta">
+                  <span>{{ item.artistName || "-" }}</span>
+                  <span class="dot">·</span>
+                  <span>{{ item.periodText }}</span>
+                </div>
+                <div class="li-badges">
+                  <span v-if="item.hasLecture" class="badge">특강</span>
+                  <span v-if="item.imageUrl" class="badge ghost">포스터</span>
+                </div>
+              </div>
+            </button>
+
+            <div v-if="!loading && filtered.length === 0" class="empty">
+              전시 데이터가 없습니다.
+            </div>
+            <div v-if="loading" class="empty">불러오는 중...</div>
+          </div>
+        </div>
+
+        <div class="panel-foot">
+          <button
+            type="button"
+            class="btn danger subtle"
+            :disabled="!selectedId || saving"
+            @click="handleDelete"
+          >
+            {{ saving ? "처리 중..." : "삭제" }}
+          </button>
+        </div>
+      </aside>
     </section>
   </section>
 </template>
@@ -242,20 +281,30 @@ import {
   doc,
   addDoc,
   updateDoc,
-  deleteDoc,
-  getDoc,
   getDocs,
   query,
-  orderBy,
   where,
   serverTimestamp,
   Timestamp,
   writeBatch,
   onSnapshot,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+/**
+ * 운영 구조
+ * - /data/firestore-latest.json : 영구데이터(정본)
+ * - Firestore(exhibitions/lectures) : 발행 전 임시 변경/삭제 오버레이
+ * - 화면: 정본 + 오버레이 merge 결과
+ * - 삭제: deleteDoc가 아니라 deleted:true 기록
+ */
+
 const qText = ref("");
+const q = qText;
+
+const filterTab = ref("all"); // 'all' | 'exhibition' | 'lecture'
+
 const selectedId = ref("");
 const saving = ref(false);
 const loading = ref(true);
@@ -270,8 +319,6 @@ const form = reactive({
   endDate: "",
   imageUrl: "",
   hasLecture: false,
-
-  // 연결용(내부)
   lectureId: "",
 });
 
@@ -292,7 +339,6 @@ function clearMsgs() {
 function setOk(msg) {
   okMsg.value = msg;
   errorMsg.value = "";
-  // 3초 후 메시지 자동 제거
   setTimeout(() => {
     if (okMsg.value === msg) okMsg.value = "";
   }, 3000);
@@ -303,9 +349,7 @@ function setErr(msg) {
 }
 
 function dateToTimestamp(dateStr) {
-  // dateStr: "YYYY-MM-DD"
   if (!dateStr) return null;
-  // 로컬 기준 00:00:00 (운영상 충분)
   const d = new Date(`${dateStr}T00:00:00`);
   if (Number.isNaN(d.getTime())) return null;
   return Timestamp.fromDate(d);
@@ -338,58 +382,131 @@ function tsToTimeInput(ts) {
   return `${hh}:${mi}`;
 }
 
-/** 목록 데이터 */
-const exhibitions = ref([]);
+function toMillisMaybe(v) {
+  if (!v) return 0;
+  if (v?.toMillis) return v.toMillis();
+  const d = new Date(v);
+  const ms = d.getTime();
+  return Number.isNaN(ms) ? 0 : ms;
+}
 
-/** 목록 구독(onSnapshot) */
+/** 영구데이터(정본) */
+const base = ref({
+  exhibitions: [],
+  lectures: [],
+});
+
+async function loadLatestJson() {
+  try {
+    const res = await fetch("/data/firestore-latest.json", { cache: "no-store" });
+    if (!res.ok) return;
+
+    const payload = await res.json();
+    const ex = Array.isArray(payload?.data?.exhibitions) ? payload.data.exhibitions : [];
+    const le = Array.isArray(payload?.data?.lectures) ? payload.data.lectures : [];
+
+    base.value.exhibitions = ex.filter((x) => x && !x.deleted);
+    base.value.lectures = le.filter((x) => x && !x.deleted);
+  } catch {
+    // 실패해도 Firestore 오버레이로 운영 가능
+  }
+}
+
+/** Firestore 오버레이(임시 기록) */
+const exOverlay = ref([]);
+const lecOverlay = ref([]);
+
 let unsubEx = null;
+let unsubLec = null;
 
-onMounted(() => {
-  // 최신 생성순
-  const exQ = query(collection(db, "exhibitions"), orderBy("createdAt", "desc"));
+function mergeById(baseArr, overlayArr) {
+  const map = new Map();
+  (baseArr || []).forEach((x) => {
+    if (x && x.id) map.set(x.id, { ...x });
+  });
 
-  unsubEx = onSnapshot(
-    exQ,
-    (snap) => {
-      const arr = snap.docs.map((d) => {
-        const data = d.data() || {};
-        const sd = data.startDate ? tsToDateInput(data.startDate) : "";
-        const ed = data.endDate ? tsToDateInput(data.endDate) : "";
-        const periodText = sd && ed ? `${sd} ~ ${ed}` : (sd || ed || "-");
-        return {
-          id: d.id,
-          title: data.title || "",
-          artistName: data.artistName || "",
-          cardName: data.cardName || "",
-          imageUrl: data.imageUrl || "",
-          hasLecture: !!data.hasLecture,
-          lectureId: data.lectureId || "",
-          startDate: data.startDate || null,
-          endDate: data.endDate || null,
-          periodText,
-        };
-      });
-
-      exhibitions.value = arr;
-      loading.value = false;
-    },
-    (err) => {
-      loading.value = false;
-      setErr(err?.message || "전시 목록을 불러오지 못했습니다.");
+  (overlayArr || []).forEach((x) => {
+    if (!x || !x.id) return;
+    if (x.deleted) {
+      map.delete(x.id);
+    } else {
+      const prev = map.get(x.id) || {};
+      map.set(x.id, { ...prev, ...x, id: x.id });
     }
-  );
+  });
+
+  return Array.from(map.values());
+}
+
+/** ✅ 최신 날짜가 위로: startDate(우선) → endDate → updatedAt/createdAt 순 */
+function exhibitionSortKey(x) {
+  const a =
+    toMillisMaybe(x.startDate) ||
+    toMillisMaybe(x.endDate) ||
+    toMillisMaybe(x.updatedAt) ||
+    toMillisMaybe(x.createdAt);
+  return a || 0;
+}
+
+const mergedLectures = computed(() => {
+  const out = mergeById(base.value.lectures, lecOverlay.value);
+  return out
+    .filter((x) => x && x.id && !x.deleted)
+    .sort((a, b) => {
+      const am =
+        toMillisMaybe(a.dateTime) ||
+        toMillisMaybe(a.updatedAt) ||
+        toMillisMaybe(a.createdAt);
+      const bm =
+        toMillisMaybe(b.dateTime) ||
+        toMillisMaybe(b.updatedAt) ||
+        toMillisMaybe(b.createdAt);
+      return bm - am;
+    });
 });
 
-onBeforeUnmount(() => {
-  if (unsubEx) unsubEx();
+const mergedExhibitions = computed(() => {
+  const out = mergeById(base.value.exhibitions, exOverlay.value);
+
+  return out
+    .filter((x) => x && x.id && !x.deleted)
+    .map((x) => {
+      const sd = x.startDate ? tsToDateInput(x.startDate) : "";
+      const ed = x.endDate ? tsToDateInput(x.endDate) : "";
+      const periodText = sd && ed ? `${sd} ~ ${ed}` : (sd || ed || "-");
+      return {
+        id: x.id,
+        title: x.title || "",
+        artistName: x.artistName || "",
+        cardName: x.cardName || "",
+        imageUrl: x.imageUrl || "",
+        hasLecture: !!x.hasLecture,
+        lectureId: x.lectureId || "",
+        startDate: x.startDate || null,
+        endDate: x.endDate || null,
+        createdAt: x.createdAt || null,
+        updatedAt: x.updatedAt || null,
+        periodText,
+      };
+    })
+    .sort((a, b) => exhibitionSortKey(b) - exhibitionSortKey(a));
 });
 
-/** 검색 */
+/** ✅ 탭 + 검색 필터 */
 const filtered = computed(() => {
   const s = (qText.value || "").trim().toLowerCase();
-  if (!s) return exhibitions.value;
 
-  return exhibitions.value.filter((x) => {
+  let arr = mergedExhibitions.value;
+
+  if (filterTab.value === "lecture") {
+    arr = arr.filter((x) => !!x.hasLecture);
+  } else if (filterTab.value === "exhibition") {
+    arr = arr.filter((x) => !x.hasLecture);
+  }
+
+  if (!s) return arr;
+
+  return arr.filter((x) => {
     return (
       (x.title || "").toLowerCase().includes(s) ||
       (x.artistName || "").toLowerCase().includes(s) ||
@@ -399,32 +516,70 @@ const filtered = computed(() => {
   });
 });
 
+onMounted(async () => {
+  loading.value = true;
+  await loadLatestJson();
+
+  unsubEx = onSnapshot(
+    collection(db, "exhibitions"),
+    (snap) => {
+      exOverlay.value = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+      loading.value = false;
+    },
+    (err) => {
+      loading.value = false;
+      setErr(err?.message || "전시 임시 기록(Firestore)을 불러오지 못했습니다.");
+    }
+  );
+
+  unsubLec = onSnapshot(
+    collection(db, "lectures"),
+    (snap) => {
+      lecOverlay.value = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+    },
+    (err) => {
+      setErr(err?.message || "특강 임시 기록(Firestore)을 불러오지 못했습니다.");
+    }
+  );
+});
+
+onBeforeUnmount(() => {
+  if (unsubEx) unsubEx();
+  if (unsubLec) unsubLec();
+});
+
+function findExById(id) {
+  return mergedExhibitions.value.find((x) => x.id === id) || null;
+}
+function findLectureById(id) {
+  return mergedLectures.value.find((x) => x.id === id) || null;
+}
+function findLectureByExhibitionId(exId) {
+  return mergedLectures.value.find((x) => x.exhibitionId === exId) || null;
+}
+
 /** 선택 */
 async function select(id) {
   clearMsgs();
   selectedId.value = id;
 
   try {
-    const exRef = doc(db, "exhibitions", id);
-    const exSnap = await getDoc(exRef);
-    if (!exSnap.exists()) {
+    const ex = findExById(id);
+    if (!ex) {
       setErr("전시 데이터를 찾을 수 없습니다.");
       return;
     }
 
-    const data = exSnap.data() || {};
+    form.title = ex.title || "";
+    form.artistName = ex.artistName || "";
+    form.cardName = ex.cardName || "";
+    form.imageUrl = ex.imageUrl || "";
+    form.startDate = ex.startDate ? tsToDateInput(ex.startDate) : "";
+    form.endDate = ex.endDate ? tsToDateInput(ex.endDate) : "";
 
-    form.title = data.title || "";
-    form.artistName = data.artistName || "";
-    form.cardName = data.cardName || "";
-    form.imageUrl = data.imageUrl || "";
-    form.startDate = data.startDate ? tsToDateInput(data.startDate) : "";
-    form.endDate = data.endDate ? tsToDateInput(data.endDate) : "";
+    form.hasLecture = !!ex.hasLecture;
+    form.lectureId = ex.lectureId || "";
 
-    form.hasLecture = !!data.hasLecture;
-    form.lectureId = data.lectureId || "";
-
-    // 특강이 있으면 lecture 문서도 로드
     lecture.title = "";
     lecture.instructor = "";
     lecture.date = "";
@@ -432,32 +587,20 @@ async function select(id) {
     lecture.imageUrl = "";
 
     if (form.hasLecture) {
-      // 1) lectureId가 있으면 그걸로 로드
-      if (form.lectureId) {
-        const lecRef = doc(db, "lectures", form.lectureId);
-        const lecSnap = await getDoc(lecRef);
-        if (lecSnap.exists()) {
-          const ld = lecSnap.data() || {};
-          lecture.title = ld.title || "";
-          lecture.instructor = ld.instructor || "";
-          lecture.imageUrl = ld.imageUrl || "";
-          lecture.date = ld.dateTime ? tsToDateInput(ld.dateTime) : "";
-          lecture.time = ld.dateTime ? tsToTimeInput(ld.dateTime) : "";
-        }
-      } else {
-        // 2) 안전망: exhibitionId로 검색
-        const lecQ = query(collection(db, "lectures"), where("exhibitionId", "==", id));
-        const lecSnap = await getDocs(lecQ);
-        const first = lecSnap.docs[0];
-        if (first) {
-          form.lectureId = first.id;
-          const ld = first.data() || {};
-          lecture.title = ld.title || "";
-          lecture.instructor = ld.instructor || "";
-          lecture.imageUrl = ld.imageUrl || "";
-          lecture.date = ld.dateTime ? tsToDateInput(ld.dateTime) : "";
-          lecture.time = ld.dateTime ? tsToTimeInput(ld.dateTime) : "";
-        }
+      let lec = null;
+
+      if (form.lectureId) lec = findLectureById(form.lectureId);
+      if (!lec) {
+        lec = findLectureByExhibitionId(id);
+        if (lec?.id) form.lectureId = lec.id;
+      }
+
+      if (lec) {
+        lecture.title = lec.title || "";
+        lecture.instructor = lec.instructor || "";
+        lecture.imageUrl = lec.imageUrl || "";
+        lecture.date = lec.dateTime ? tsToDateInput(lec.dateTime) : "";
+        lecture.time = lec.dateTime ? tsToTimeInput(lec.dateTime) : "";
       }
     }
   } catch (e) {
@@ -486,7 +629,7 @@ function resetForm() {
   lecture.imageUrl = "";
 }
 
-/** 저장 */
+/** 저장: Firestore(임시 기록)에만 저장 */
 async function handleSave() {
   clearMsgs();
 
@@ -495,7 +638,6 @@ async function handleSave() {
     return;
   }
 
-  // 특강 토글 ON이면 최소값 체크(운영 안정)
   if (form.hasLecture) {
     if (!(lecture.title || "").trim()) {
       setErr("특강명이 필요합니다.");
@@ -511,6 +653,7 @@ async function handleSave() {
 
   try {
     const exPayload = {
+      deleted: false,
       title: (form.title || "").trim(),
       artistName: (form.artistName || "").trim(),
       cardName: (form.cardName || "").trim(),
@@ -521,7 +664,6 @@ async function handleSave() {
       updatedAt: serverTimestamp(),
     };
 
-    // 신규/수정
     let exId = selectedId.value;
 
     if (!exId) {
@@ -532,14 +674,14 @@ async function handleSave() {
       exId = created.id;
       selectedId.value = exId;
     } else {
-      await updateDoc(doc(db, "exhibitions", exId), exPayload);
+      await setDoc(doc(db, "exhibitions", exId), exPayload, { merge: true });
     }
 
-    // 특강 처리
     if (form.hasLecture) {
       const dt = lectureDateTimeToTimestamp(lecture.date, lecture.time);
 
       const lecPayload = {
+        deleted: false,
         exhibitionId: exId,
         title: (lecture.title || "").trim(),
         instructor: (lecture.instructor || "").trim(),
@@ -558,31 +700,37 @@ async function handleSave() {
         lecId = createdLecture.id;
         form.lectureId = lecId;
 
-        // 전시에 lectureId 저장(목록 표시/로드 최적화)
-        await updateDoc(doc(db, "exhibitions", exId), {
-          lectureId: lecId,
-          hasLecture: true,
-        });
+        await setDoc(
+          doc(db, "exhibitions", exId),
+          { hasLecture: true, lectureId: lecId, deleted: false, updatedAt: serverTimestamp() },
+          { merge: true }
+        );
       } else {
-        await updateDoc(doc(db, "lectures", lecId), lecPayload);
-        await updateDoc(doc(db, "exhibitions", exId), {
-          hasLecture: true,
-          lectureId: lecId,
-        });
+        await setDoc(doc(db, "lectures", lecId), lecPayload, { merge: true });
+        await setDoc(
+          doc(db, "exhibitions", exId),
+          { hasLecture: true, lectureId: lecId, deleted: false, updatedAt: serverTimestamp() },
+          { merge: true }
+        );
       }
     } else {
-      // 특강 토글 OFF인 경우: 연결된 특강이 있으면 삭제(원하면 유지로 바꿀 수도 있음)
       if (form.lectureId) {
-        await deleteDoc(doc(db, "lectures", form.lectureId));
+        await setDoc(
+          doc(db, "lectures", form.lectureId),
+          { deleted: true, updatedAt: serverTimestamp(), exhibitionId: exId },
+          { merge: true }
+        );
         form.lectureId = "";
       }
-      await updateDoc(doc(db, "exhibitions", exId), {
-        hasLecture: false,
-        lectureId: "",
-      });
+
+      await setDoc(
+        doc(db, "exhibitions", exId),
+        { hasLecture: false, lectureId: "", deleted: false, updatedAt: serverTimestamp() },
+        { merge: true }
+      );
     }
 
-    setOk("저장되었습니다.");
+    setOk("저장되었습니다. (임시 기록에 반영됨)");
   } catch (e) {
     setErr(e?.message || "저장 중 오류가 발생했습니다.");
   } finally {
@@ -590,39 +738,50 @@ async function handleSave() {
   }
 }
 
-/** 삭제 (전시 삭제 + 연결된 특강도 같이 삭제) */
+/** 삭제: Firestore에 삭제 요청만 기록(deleted:true) */
 async function handleDelete() {
   clearMsgs();
 
   const exId = selectedId.value;
   if (!exId) return;
 
-  if (!confirm("정말 삭제할까요? (연결된 특강도 함께 삭제됩니다)")) return;
+  if (!confirm("정말 삭제할까요? (정해진 시간 발행 시 영구데이터에서도 삭제됩니다)")) return;
 
   saving.value = true;
 
   try {
     const batch = writeBatch(db);
 
-    // 전시 문서
-    batch.delete(doc(db, "exhibitions", exId));
+    batch.set(
+      doc(db, "exhibitions", exId),
+      { deleted: true, updatedAt: serverTimestamp() },
+      { merge: true }
+    );
 
-    // 1) 전시에 저장된 lectureId가 있으면 삭제
     if (form.lectureId) {
-      batch.delete(doc(db, "lectures", form.lectureId));
+      batch.set(
+        doc(db, "lectures", form.lectureId),
+        { deleted: true, updatedAt: serverTimestamp(), exhibitionId: exId },
+        { merge: true }
+      );
     }
 
-    // 2) 안전망: exhibitionId로 연결된 특강 전부 삭제
     const lecQ = query(collection(db, "lectures"), where("exhibitionId", "==", exId));
     const lecSnap = await getDocs(lecQ);
-    lecSnap.forEach((d) => batch.delete(doc(db, "lectures", d.id)));
+    lecSnap.forEach((d) => {
+      batch.set(
+        doc(db, "lectures", d.id),
+        { deleted: true, updatedAt: serverTimestamp(), exhibitionId: exId },
+        { merge: true }
+      );
+    });
 
     await batch.commit();
 
     resetForm();
-    setOk("삭제되었습니다.");
+    setOk("삭제 요청이 기록되었습니다. (발행 시 영구데이터 반영)");
   } catch (e) {
-    setErr(e?.message || "삭제 중 오류가 발생했습니다.");
+    setErr(e?.message || "삭제 처리 중 오류가 발생했습니다.");
   } finally {
     saving.value = false;
   }
@@ -707,12 +866,11 @@ async function handleDelete() {
 .btn.danger:hover { background: rgba(176,0,32,0.06); }
 .btn.subtle { padding: 8px 10px; border-radius: 9px; }
 
-/* Layout */
-.layout {
-  display: grid;
-  grid-template-columns: 360px 1fr;
+/* ✅ Single column layout */
+.layout.single {
+  display: flex;
+  flex-direction: column;
   gap: 18px;
-  align-items: start;
 }
 
 /* Panels */
@@ -751,7 +909,39 @@ async function handleDelete() {
   justify-content: flex-end;
 }
 
+/* ✅ 스크롤바 숨김(스크롤은 유지) */
+.list-wrap {
+  overflow: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.list-wrap::-webkit-scrollbar { display: none; }
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tab {
+  border: 1px solid rgba(0,0,0,0.10);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.tab:hover { background: rgba(0,0,0,0.03); }
+.tab.active {
+  background: #111;
+  color: #fff;
+  border-color: rgba(0,0,0,0.12);
+}
+
 /* List */
+.search-row { margin-bottom: 12px; }
+
 .search {
   width: 100%;
   box-sizing: border-box;
@@ -763,9 +953,8 @@ async function handleDelete() {
 }
 
 .list {
-  margin-top: 12px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .list-item {
@@ -780,15 +969,47 @@ async function handleDelete() {
 .list-item:hover { background: rgba(0,0,0,0.02); }
 .list-item.active { border-color: rgba(0,0,0,0.18); background: rgba(0,0,0,0.03); }
 
+.list-item.row {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Thumbnail */
+.thumb {
+  width: 76px;
+  height: 76px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(0,0,0,0.03);
+}
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.thumb-ph {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02));
+}
+
+.li-main { min-width: 0; }
+
 .li-title {
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 6px;
 }
+
 .li-meta {
   font-size: 12px;
   color: #666;
 }
+
 .li-badges {
   margin-top: 8px;
   display: flex;
@@ -982,9 +1203,8 @@ async function handleDelete() {
 .dot { margin: 0 6px; color: #999; }
 
 @media (max-width: 980px) {
-  .layout { grid-template-columns: 1fr; }
-  .list-panel { order: 2; }
-  .form-panel { order: 1; }
   .grid { grid-template-columns: 1fr; }
+  .list-item.row { grid-template-columns: 64px 1fr; }
+  .thumb { width: 64px; height: 64px; }
 }
 </style>
