@@ -1,7 +1,7 @@
 {
   "meta": {
     "timezone": "Asia/Seoul",
-    "publishedAt": "2026-01-23T10:44:06.352Z",
+    "publishedAt": "2026-01-23T11:38:59.861Z",
     "stampKST": "20260123",
     "collections": [
       "exhibitions",
@@ -416,20 +416,6 @@
         "createdAt": "2026-01-23T02:45:09.985Z",
         "lectureId": "",
         "updatedAt": "2026-01-23T02:45:10.219Z"
-      },
-      {
-        "id": "RUL2Awdp2X2lTKuQgW11",
-        "deleted": false,
-        "title": "추향-가을소리",
-        "artistName": "김정환 외 3인",
-        "cardName": "3인전",
-        "imageUrl": "https://github.com/youngsungallery/IMG_DB/blob/main/youngsungallery/exh/exh_main_2025_11_01.png?raw=true",
-        "startDate": "2025-10-31T15:00:00.000Z",
-        "endDate": "2025-11-29T15:00:00.000Z",
-        "hasLecture": true,
-        "createdAt": "2026-01-23T03:50:34.697Z",
-        "lectureId": "ejIc8vxfRqon5mHuiOF7",
-        "updatedAt": "2026-01-23T03:50:35.145Z"
       },
       {
         "id": "RgJGxvg6EF3zwCz0cgTR",
@@ -951,17 +937,6 @@
         "dateTime": "2022-12-10T06:00:00.000Z",
         "createdAt": "2026-01-23T03:24:24.809Z",
         "updatedAt": "2026-01-23T03:24:24.809Z"
-      },
-      {
-        "id": "ejIc8vxfRqon5mHuiOF7",
-        "deleted": false,
-        "exhibitionId": "RUL2Awdp2X2lTKuQgW11",
-        "title": "작가와의 만남",
-        "instructor": "김정환 외 3인",
-        "imageUrl": "",
-        "dateTime": "2025-11-08T06:00:00.000Z",
-        "createdAt": "2026-01-23T03:50:34.924Z",
-        "updatedAt": "2026-01-23T03:50:34.924Z"
       },
       {
         "id": "gjAHg1Kw2y751k3zPwZm",
