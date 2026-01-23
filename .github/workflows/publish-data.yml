@@ -1,0 +1,89 @@
+name: Publish Firestore Data (data -> main)
+
+on:
+  schedule:
+    - cron: "0 15 * * *" # KST 00:00
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "publish-data"
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Configure Git
+        run: |
+          git config user.name "youngsun-publish-bot"
+          git config user.email "youngsun-publish-bot@users.noreply.github.com"
+
+      # 1) data 브랜치로 이동(없으면 생성)
+      - name: Checkout data branch
+        run: |
+          git fetch origin
+          if git show-ref --verify --quiet refs/remotes/origin/data; then
+            git checkout -B data origin/data
+          else
+            git checkout -b data
+          fi
+
+      # 2) Firestore -> public/data 생성/갱신
+      - name: Publish Firestore -> public/data (on data)
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          node scripts/publish-firestore-to-public.mjs
+
+          # ✅ 데이터만 커밋(안전)
+          git add public/data
+
+          if git diff --cached --quiet; then
+            echo "No data changes. Stop."
+            exit 0
+          fi
+
+          git commit -m "chore(data): publish firestore to public/data"
+
+      # 3) data 브랜치 push
+      - name: Push data branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin data
+
+      # 4) main으로 머지(배포 기준은 main 하나)
+      - name: Merge data -> main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch origin
+
+          # main 체크아웃
+          git checkout -B main origin/main
+
+          # 머지 (충돌 나면 실패)
+          git merge --no-ff data -m "chore(data): sync data branch into main"
+
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin main
