@@ -1,3 +1,4 @@
+# FILE: .github/workflows/publish-data.yml
 name: Publish Firestore Data (data -> main)
 
 on:
@@ -37,24 +38,31 @@ jobs:
           git config user.name "youngsun-publish-bot"
           git config user.email "youngsun-publish-bot@users.noreply.github.com"
 
-      # 1) data 브랜치로 이동(없으면 생성)
+      # 0) 인증
+      - name: Set origin with token
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch origin
+
+      # 1) data 브랜치 체크아웃(없으면 생성)
       - name: Checkout data branch
         run: |
-          git fetch origin
           if git show-ref --verify --quiet refs/remotes/origin/data; then
             git checkout -B data origin/data
           else
             git checkout -b data
           fi
 
-      # 2) Firestore -> public/data 생성/갱신
-      - name: Publish Firestore -> public/data (on data)
+      # 2) Firestore -> public/data 생성/갱신 (data에 커밋)
+      - name: Publish Firestore -> public/data (commit on data)
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
+          set -e
           node scripts/publish-firestore-to-public.mjs
 
-          # ✅ 데이터만 커밋(안전)
           git add public/data
 
           if git diff --cached --quiet; then
@@ -63,27 +71,27 @@ jobs:
           fi
 
           git commit -m "chore(data): publish firestore to public/data"
-
-      # 3) data 브랜치 push
-      - name: Push data branch
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin data
 
-      # 4) main으로 머지(배포 기준은 main 하나)
-      - name: Merge data -> main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 3) main에 "merge" 말고 "data의 public/data를 덮어쓰기"로 반영 (충돌 방지)
+      - name: Sync public/data from data -> main (no merge)
         run: |
+          set -e
           git fetch origin
 
-          # main 체크아웃
+          # main 최신으로 맞추고
           git checkout -B main origin/main
+          git pull --ff-only origin main
 
-          # 머지 (충돌 나면 실패)
-          git merge --no-ff data -m "chore(data): sync data branch into main"
+          # data 브랜치의 public/data만 가져와서 덮어쓰기
+          git checkout data -- public/data
 
-          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git add public/data
+
+          if git diff --cached --quiet; then
+            echo "Main already has latest data. Skip."
+            exit 0
+          fi
+
+          git commit -m "chore(data): sync published data into main"
           git push origin main
