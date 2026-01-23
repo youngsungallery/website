@@ -38,7 +38,6 @@ jobs:
           git config user.name "youngsun-publish-bot"
           git config user.email "youngsun-publish-bot@users.noreply.github.com"
 
-      # 0) 인증
       - name: Set origin with token
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -46,7 +45,7 @@ jobs:
           git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git fetch origin
 
-      # 1) data 브랜치 체크아웃(없으면 생성)
+      # 1) data 브랜치 준비
       - name: Checkout data branch
         run: |
           if git show-ref --verify --quiet refs/remotes/origin/data; then
@@ -55,7 +54,7 @@ jobs:
             git checkout -b data
           fi
 
-      # 2) Firestore -> public/data 생성/갱신 (data에 커밋)
+      # 2) Firestore -> public/data 생성/갱신 (data에 커밋/푸시)
       - name: Publish Firestore -> public/data (commit on data)
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
@@ -66,30 +65,27 @@ jobs:
           git add public/data
 
           if git diff --cached --quiet; then
-            echo "No data changes. Stop."
+            echo "No data changes on data branch."
             exit 0
           fi
 
           git commit -m "chore(data): publish firestore to public/data"
           git push origin data
 
-      # 3) main에 "merge" 말고 "data의 public/data를 덮어쓰기"로 반영 (충돌 방지)
-      - name: Sync public/data from data -> main (no merge)
+      # 3) main에 "merge" 말고 "data의 public/data만" 덮어쓰기 sync 후 커밋/푸시
+      - name: Sync public/data from data -> main (commit/push on main)
         run: |
           set -e
           git fetch origin
 
-          # main 최신으로 맞추고
           git checkout -B main origin/main
           git pull --ff-only origin main
 
-          # data 브랜치의 public/data만 가져와서 덮어쓰기
           git checkout data -- public/data
-
           git add public/data
 
           if git diff --cached --quiet; then
-            echo "Main already has latest data. Skip."
+            echo "Main already has latest data."
             exit 0
           fi
 
