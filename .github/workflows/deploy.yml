@@ -2,15 +2,8 @@
 name: Deploy to GitHub Pages (main only)
 
 on:
-  # ✅ 사람이 main에 푸시하면 당연히 배포
   push:
     branches: ["main"]
-
-  # ✅ data 워크플로우가 끝나면 자동 배포 (핵심)
-  workflow_run:
-    workflows: ["Publish Firestore Data (data -> main)"]
-    types: [completed]
-
   workflow_dispatch:
 
 permissions:
@@ -24,17 +17,16 @@ concurrency:
 
 jobs:
   build_deploy:
-    # workflow_run으로 들어왔을 땐 publish가 성공한 경우만 배포
-    if: |
-      github.event_name != 'workflow_run' ||
-      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
 
+    # ✅ 이게 반드시 "job 레벨"에 있어야 함 (들여쓰기 중요)
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
-      - name: Checkout main
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: main
 
       - name: Setup Node
         uses: actions/setup-node@v4
