@@ -5,7 +5,7 @@ on:
   push:
     branches: ["main"]
 
-  # ✅ 스케줄 발행 (KST 00:00)
+  # ✅ 스케줄 발행 (KST 00:00) = UTC 15:00
   schedule:
     - cron: "0 15 * * *"
 
@@ -47,12 +47,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: true
 
       - name: Debug (event & inputs)
         run: |
           echo "event_name=${{ github.event_name }}"
           echo "inputs.publish=${{ github.event.inputs.publish }}"
           echo "inputs.force_deploy=${{ github.event.inputs.force_deploy }}"
+          echo "ref_name=${{ github.ref_name }}"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -74,25 +76,33 @@ jobs:
         if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true')
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -e
+
           echo "== Publish step running =="
           node scripts/publish-firestore-to-public.mjs
 
           git config user.name "youngsun-publish-bot"
           git config user.email "youngsun-publish-bot@users.noreply.github.com"
 
+          # ✅ 토큰으로 push 보장 (schedule에서 특히 안전)
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
           git add public/data/*.json
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           git commit -m "chore(data): publish firestore to public/data [skip ci]"
-          git push
 
-          echo "changed=true" >> $GITHUB_OUTPUT
+          # ✅ 브랜치 명시 push (HEAD -> ref_name)
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
 
       # =========================
       # 2) Build & Deploy 조건
