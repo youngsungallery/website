@@ -3,7 +3,7 @@ name: Publish Firestore Data (data -> main)
 
 on:
   schedule:
-    - cron: "0 15 * * *" # KST 00:00
+    - cron: "0 15 * * *" # KST 00:00 (UTC 15:00)
   workflow_dispatch:
 
 permissions:
@@ -22,7 +22,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: true
+          # ✅ PAT로 푸시할 거라 기본 자격증명은 끄는게 안전
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -38,16 +39,22 @@ jobs:
           git config user.name "youngsun-publish-bot"
           git config user.email "youngsun-publish-bot@users.noreply.github.com"
 
-      - name: Set origin with token
+      - name: Set origin with PAT token
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUSH_TOKEN: ${{ secrets.PUSH_TOKEN }}
         run: |
-          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git fetch origin
+          set -e
+          if [ -z "${PUSH_TOKEN}" ]; then
+            echo "ERROR: secrets.PUSH_TOKEN is empty. Add PUSH_TOKEN in repo Secrets."
+            exit 1
+          fi
+          git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch origin --prune
 
       # 1) data 브랜치 준비
       - name: Checkout data branch
         run: |
+          set -e
           if git show-ref --verify --quiet refs/remotes/origin/data; then
             git checkout -B data origin/data
           else
@@ -72,11 +79,11 @@ jobs:
           git commit -m "chore(data): publish firestore to public/data"
           git push origin data
 
-      # 3) main에 "merge" 말고 "data의 public/data만" 덮어쓰기 sync 후 커밋/푸시
+      # 3) main에 "data의 public/data만" 덮어쓰기 sync 후 커밋/푸시
       - name: Sync public/data from data -> main (commit/push on main)
         run: |
           set -e
-          git fetch origin
+          git fetch origin --prune
 
           git checkout -B main origin/main
           git pull --ff-only origin main

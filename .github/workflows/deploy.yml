@@ -6,7 +6,7 @@ on:
     branches: ["main"]
 
   workflow_run:
-    workflows: ["Publish Firestore Data (data -> main)"] # ← 위 publish-data.yml의 name과 정확히 동일
+    workflows: ["Publish Firestore Data (data -> main)"]
     types: [completed]
 
   workflow_dispatch:
