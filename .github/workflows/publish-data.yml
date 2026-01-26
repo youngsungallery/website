@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # ✅ PAT로 푸시할 거라 기본 자격증명은 끄는게 안전
+          # ✅ PAT로 push 할 거라 기본 자격증명은 끔
           persist-credentials: false
 
       - name: Setup Node
@@ -69,6 +69,7 @@ jobs:
           set -e
           node scripts/publish-firestore-to-public.mjs
 
+          # ✅ 데이터만 반영 (안전)
           git add public/data
 
           if git diff --cached --quiet; then
@@ -85,9 +86,11 @@ jobs:
           set -e
           git fetch origin --prune
 
+          # main 최신으로 정렬
           git checkout -B main origin/main
           git pull --ff-only origin main
 
+          # data의 public/data만 스냅샷처럼 덮어쓰기 (merge 충돌 방지)
           git checkout data -- public/data
           git add public/data
 
