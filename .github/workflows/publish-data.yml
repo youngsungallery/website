@@ -2,8 +2,6 @@
 name: Publish Firestore Data (data -> main)
 
 on:
-  schedule:
-    - cron: "0 15 * * *" # KST 00:00 (UTC 15:00)
   workflow_dispatch:
 
 permissions:
