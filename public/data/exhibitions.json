@@ -1,7 +1,7 @@
 {
   "meta": {
     "timezone": "Asia/Seoul",
-    "publishedAt": "2026-01-27T03:15:53.559Z",
+    "publishedAt": "2026-01-27T03:44:35.068Z",
     "stampKST": "20260127",
     "collections": [
       "exhibitions",
@@ -696,6 +696,34 @@
         "createdAt": "2026-01-26T01:32:21.195Z",
         "lectureId": "TLYogfTIGZHfLEsgn3lK",
         "updatedAt": "2026-01-26T01:32:21.689Z"
+      },
+      {
+        "id": "0sXI1RqcS8qqH2c5imit",
+        "deleted": false,
+        "title": "추향-가을소리",
+        "artistName": "김정환 작가외 3인",
+        "cardName": "영선갤러리 기획전",
+        "imageUrl": "https://github.com/youngsungallery/IMG_DB/blob/main/youngsungallery/exh/exh_main_2025_11_01.png?raw=true",
+        "startDate": "2025-10-31T15:00:00.000Z",
+        "endDate": "2025-11-29T15:00:00.000Z",
+        "hasLecture": true,
+        "createdAt": "2026-01-27T03:43:58.702Z",
+        "lectureId": "VOSCWU4KXipLT6BUwT66",
+        "updatedAt": "2026-01-27T03:43:59.154Z"
+      },
+      {
+        "id": "ixjfmgf28BHmqr2gDAGC",
+        "deleted": false,
+        "title": "행복을 그리다",
+        "artistName": "헨드릭 릴랑가",
+        "cardName": "영선갤러리 특별전",
+        "imageUrl": "https://github.com/youngsungallery/IMG_DB/blob/main/youngsungallery/exh/exh_main_2025_12_10.png?raw=true",
+        "startDate": "2025-12-09T15:00:00.000Z",
+        "endDate": "2026-02-27T15:00:00.000Z",
+        "hasLecture": false,
+        "createdAt": "2026-01-27T03:19:27.635Z",
+        "lectureId": "",
+        "updatedAt": "2026-01-27T03:19:27.880Z"
       }
     ],
     "lectures": [
@@ -1039,6 +1067,17 @@
         "dateTime": "2025-11-08T06:00:00.000Z",
         "createdAt": "2026-01-26T01:32:21.446Z",
         "updatedAt": "2026-01-26T01:32:21.446Z"
+      },
+      {
+        "id": "VOSCWU4KXipLT6BUwT66",
+        "deleted": false,
+        "exhibitionId": "0sXI1RqcS8qqH2c5imit",
+        "title": "작가와의 만남",
+        "instructor": "김정환 작가",
+        "imageUrl": "",
+        "dateTime": "2025-11-08T06:00:00.000Z",
+        "createdAt": "2026-01-27T03:43:58.937Z",
+        "updatedAt": "2026-01-27T03:43:58.937Z"
       }
     ]
   }
