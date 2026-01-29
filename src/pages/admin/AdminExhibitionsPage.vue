@@ -1,7 +1,12 @@
 <!-- FILE: src/components/admin/AdminExhibitionsPage.vue
-  NOTE:
-  - GitHub Pages에서는 fetch("/data/...") 같은 절대경로가 404를 만들 수 있음.
-  - 반드시 import.meta.env.BASE_URL 기준으로 public/data/exhibitions.json 을 로드해야 함.
+  ✅ 새 구조(요청 반영)
+  - Firestore만 로드(정본 JSON 로드/merge 제거)
+  - 목록이 우선(항상 표시), 폼은 기본 숨김(선택/새로 만들기 때만 표시)
+  - 전시/특강 완전 분리
+    - 전시: lectureId로 “특강 문서”만 연결
+    - 특강: 전시와 독립
+  - 삭제: Firestore 문서 실제 삭제(deleteDoc)
+  - StorageUsageBox + bumpStorageUsedBytes/estimateDocBytes 연결 유지
 -->
 
 <template>
@@ -9,296 +14,48 @@
     <header class="page-head">
       <div class="head-top">
         <RouterLink to="/admin" class="home-link">← 관리자 홈</RouterLink>
-
-        <div class="head-actions">
-          <!-- ✅ 새 전시 / 새 특강 분리 -->
-          <button type="button" class="btn" @click="newExhibition" :disabled="saving">
-            새 전시
-          </button>
-          <button type="button" class="btn" @click="newLecture" :disabled="saving">
-            새 특강
-          </button>
-
-          <button
-            type="button"
-            class="btn primary"
-            :disabled="!canSave || saving"
-            @click="handleSave"
-          >
-            {{ saving ? "저장 중..." : "저장" }}
-          </button>
-        </div>
       </div>
 
       <div class="head-title">
-        <h2 class="title">전시/특강 관리</h2>
+        <h2 class="title">전시 / 특강 관리</h2>
         <p class="desc">
-          전시는 전시폼에서, 전시+특강은 전시폼에서 함께, 특강만은 특강폼에서 등록합니다.
+          목록에서 선택하면 오른쪽에서 편집합니다. 전시는 특강을 “연결(lectureId)”만 합니다.
         </p>
         <p v-if="errorMsg" class="msg error">{{ errorMsg }}</p>
         <p v-if="okMsg" class="msg ok">{{ okMsg }}</p>
       </div>
     </header>
 
-    <!-- ✅ 전체를 한 컬럼으로: 상단 폼 / 하단 목록 -->
-    <section class="layout single">
-      <!-- TOP: 폼 -->
-      <main class="panel form-panel">
-        <div class="panel-head">
-          <div class="panel-title">
-            <span v-if="mode === 'exhibition'">전시 등록 / 수정</span>
-            <span v-else>특강 등록 / 수정</span>
-          </div>
-          <div class="panel-sub">
-            <span v-if="mode === 'exhibition'">전시를 저장합니다. 특강이 있으면 아래에서 함께 작성하세요.</span>
-            <span v-else>특강만 저장합니다. (전시에 연결하려면 전시폼에서 등록)</span>
-          </div>
-        </div>
-
-        <div class="panel-body form">
-          <!-- ✅ 전시 폼 -->
-          <template v-if="mode === 'exhibition'">
-            <div class="grid">
-              <label class="field">
-                <span class="label">전시 제목</span>
-                <input v-model="exForm.title" class="input" type="text" placeholder="예) 봄의 색채" />
-              </label>
-
-              <label class="field">
-                <span class="label">작가명</span>
-                <input v-model="exForm.artistName" class="input" type="text" placeholder="예) 홍길동" />
-              </label>
-
-              <label class="field">
-                <span class="label">카드 이름</span>
-                <input v-model="exForm.cardName" class="input" type="text" placeholder="예) 영선갤러리 기획전" />
-              </label>
-
-              <label class="field">
-                <span class="label">전시 시작일</span>
-                <input v-model="exForm.startDate" class="input" type="date" />
-              </label>
-
-              <label class="field">
-                <span class="label">전시 종료일</span>
-                <input v-model="exForm.endDate" class="input" type="date" />
-              </label>
-
-              <label class="field wide">
-                <span class="label">전시 포스터 이미지 URL</span>
-                <input
-                  v-model="exForm.imageUrl"
-                  class="input"
-                  type="url"
-                  placeholder="https://..."
-                />
-                <span class="hint">
-                  전시+특강 같이 진행 시, 특강 포스터 URL이 비어있으면 전시 포스터를 사용합니다.
-                </span>
-              </label>
-            </div>
-
-            <div class="divider"></div>
-
-            <!-- 특강 토글 -->
-            <div class="toggle-row">
-              <div class="toggle-left">
-                <div class="toggle-title">특강</div>
-                <div class="toggle-desc">전시와 함께 특강이 진행되는 경우 체크</div>
-              </div>
-
-              <label class="switch">
-                <input v-model="exForm.hasLecture" type="checkbox" />
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <!-- 특강 폼(전시에 딸린 특강) -->
-            <section v-if="exForm.hasLecture" class="lecture-box">
-              <div class="lecture-head">
-                <div>
-                  <div class="lecture-title">특강 정보</div>
-                  <div class="lecture-sub">특강 포스터 URL은 비워도 됩니다(전시 포스터 사용)</div>
-                </div>
-              </div>
-
-              <div class="grid">
-                <label class="field">
-                  <span class="label">특강명</span>
-                  <input v-model="lecInEx.title" class="input" type="text" placeholder="예) 작가와의 대화" />
-                </label>
-
-                <label class="field">
-                  <span class="label">강사</span>
-                  <input v-model="lecInEx.instructor" class="input" type="text" placeholder="예) 홍길동" />
-                </label>
-
-                <label class="field">
-                  <span class="label">특강 날짜</span>
-                  <input v-model="lecInEx.date" class="input" type="date" />
-                </label>
-
-                <label class="field">
-                  <span class="label">특강 시간</span>
-                  <input v-model="lecInEx.time" class="input" type="time" />
-                </label>
-
-                <label class="field wide">
-                  <span class="label">특강 이미지 URL (선택)</span>
-                  <input v-model="lecInEx.imageUrl" class="input" type="url" placeholder="비워도 됨" />
-                </label>
-              </div>
-            </section>
-
-            <div class="divider"></div>
-
-            <!-- 미리보기 -->
-            <section class="preview">
-              <div class="preview-head">
-                <div class="panel-title">미리보기</div>
-                <div class="panel-sub">전시 카드 + (옵션) 특강 카드</div>
-              </div>
-
-              <div class="preview-card">
-                <div class="pv-title">{{ exForm.title || "전시 제목" }}</div>
-                <div class="pv-meta">
-                  <span>{{ exForm.artistName || "작가명" }}</span>
-                  <span class="dot">·</span>
-                  <span>{{ exForm.cardName || "카드 이름" }}</span>
-                </div>
-                <div class="pv-date">
-                  <span>{{ exForm.startDate || "YYYY-MM-DD" }}</span>
-                  <span> ~ </span>
-                  <span>{{ exForm.endDate || "YYYY-MM-DD" }}</span>
-                </div>
-
-                <div class="pv-row">
-                  <span class="badge">전시</span>
-                  <span class="badge" v-if="exForm.hasLecture">특강 포함</span>
-                  <span class="badge ghost" v-if="exForm.imageUrl">포스터</span>
-                </div>
-
-                <div v-if="exForm.hasLecture" class="pv-lecture">
-                  <div class="pv-lecture-title">특강: {{ lecInEx.title || "특강명" }}</div>
-                  <div class="pv-lecture-meta">
-                    <span>{{ lecInEx.instructor || "강사" }}</span>
-                    <span class="dot">·</span>
-                    <span>{{ lecInEx.date || "YYYY-MM-DD" }} {{ lecInEx.time || "HH:MM" }}</span>
-                  </div>
-                  <div class="pv-lecture-note">
-                    포스터:
-                    {{
-                      lecInEx.imageUrl
-                        ? "특강 이미지 URL"
-                        : (exForm.imageUrl ? "전시 포스터 사용" : "없음")
-                    }}
-                  </div>
-                </div>
-              </div>
-            </section>
-          </template>
-
-          <!-- ✅ 특강 전용 폼(특강만) -->
-          <template v-else>
-            <div class="grid">
-              <label class="field">
-                <span class="label">특강명</span>
-                <input v-model="lecOnly.title" class="input" type="text" placeholder="예) 작가와의 대화" />
-              </label>
-
-              <label class="field">
-                <span class="label">강사</span>
-                <input v-model="lecOnly.instructor" class="input" type="text" placeholder="예) 홍길동" />
-              </label>
-
-              <label class="field">
-                <span class="label">특강 날짜</span>
-                <input v-model="lecOnly.date" class="input" type="date" />
-              </label>
-
-              <label class="field">
-                <span class="label">특강 시간</span>
-                <input v-model="lecOnly.time" class="input" type="time" />
-              </label>
-
-              <label class="field wide">
-                <span class="label">특강 이미지 URL (선택)</span>
-                <input v-model="lecOnly.imageUrl" class="input" type="url" placeholder="https://... (선택)" />
-              </label>
-            </div>
-
-            <div class="divider"></div>
-
-            <section class="preview">
-              <div class="preview-head">
-                <div class="panel-title">미리보기</div>
-                <div class="panel-sub">특강 카드</div>
-              </div>
-
-              <div class="preview-card">
-                <div class="pv-title">{{ lecOnly.title || "특강명" }}</div>
-                <div class="pv-meta">
-                  <span>{{ lecOnly.instructor || "강사" }}</span>
-                  <span class="dot">·</span>
-                  <span>{{ (lecOnly.date || "YYYY-MM-DD") }} {{ (lecOnly.time || "HH:MM") }}</span>
-                </div>
-
-                <div class="pv-row">
-                  <span class="badge">특강</span>
-                  <span class="badge ghost" v-if="lecOnly.imageUrl">포스터</span>
-                </div>
-              </div>
-            </section>
-          </template>
-        </div>
-      </main>
-
-      <!-- BOTTOM: 목록/검색 -->
-      <aside class="panel list-panel">
+    <section class="layout">
+      <!-- LEFT: 목록(우선) -->
+      <main class="panel list-panel">
         <div class="panel-head">
           <div class="panel-title">목록</div>
-          <div class="panel-sub">전시/특강을 검색하고 선택하여 수정</div>
+          <div class="panel-sub">전시/특강을 검색하고 선택하세요</div>
         </div>
 
         <div class="panel-body list-wrap">
-          <!-- ✅ 탭 필터: 전시/특강 -->
+          <!-- 탭 -->
           <div class="tabs" role="tablist" aria-label="필터">
-            <button
-              type="button"
-              class="tab"
-              :class="{ active: filterTab === 'all' }"
-              @click="filterTab = 'all'"
-            >
-              전체
-            </button>
-            <button
-              type="button"
-              class="tab"
-              :class="{ active: filterTab === 'exhibition' }"
-              @click="filterTab = 'exhibition'"
-            >
+            <button type="button" class="tab" :class="{ active: filterTab === 'exhibition' }" @click="filterTab='exhibition'">
               전시
             </button>
-            <button
-              type="button"
-              class="tab"
-              :class="{ active: filterTab === 'lecture' }"
-              @click="filterTab = 'lecture'"
-            >
+            <button type="button" class="tab" :class="{ active: filterTab === 'lecture' }" @click="filterTab='lecture'">
               특강
             </button>
           </div>
 
+          <!-- 검색 -->
           <div class="search-row">
             <input
               v-model="q"
               class="search"
               type="text"
-              placeholder="전시/특강 제목, 작가/강사, 카드명, 기간/일시 검색"
+              placeholder="제목/작가/강사/카드명/기간/일시 검색"
             />
           </div>
 
-          <!-- ✅ 페이지 정보 + 페이지 이동 -->
+          <!-- 페이지 -->
           <div class="pager">
             <div class="pager-left">
               <span class="pager-text">
@@ -328,6 +85,7 @@
             </div>
           </div>
 
+          <!-- 리스트 -->
           <div class="list">
             <button
               v-for="item in pagedCards"
@@ -350,9 +108,8 @@
                   <span>{{ item.sub2 || "-" }}</span>
                 </div>
                 <div class="li-badges">
-                  <span class="badge" v-if="item.type === 'exhibition'">전시</span>
-                  <span class="badge" v-else>특강</span>
-                  <span v-if="item.type === 'exhibition' && item.hasLecture" class="badge">특강 포함</span>
+                  <span class="badge">{{ item.type === 'exhibition' ? '전시' : '특강' }}</span>
+                  <span v-if="item.type === 'exhibition' && item.lectureId" class="badge">특강 연결</span>
                   <span v-if="item.imageUrl" class="badge ghost">포스터</span>
                 </div>
               </div>
@@ -364,17 +121,177 @@
             <div v-if="loading" class="empty">불러오는 중...</div>
           </div>
         </div>
+      </main>
 
-        <div class="panel-foot">
-          <button
-            type="button"
-            class="btn danger subtle"
-            :disabled="!selectedKey || saving"
-            @click="handleDelete"
-          >
-            {{ saving ? "처리 중..." : "삭제" }}
-          </button>
-        </div>
+      <!-- RIGHT: 상세/편집 + 스토리지 -->
+      <aside class="right-col">
+        <section class="panel detail-panel">
+          <div class="panel-head">
+            <div class="panel-title">작성 / 수정</div>
+            <div class="panel-sub">
+              <span v-if="!showForm">선택하거나 “새로 만들기”를 누르면 폼이 열립니다.</span>
+              <span v-else>
+                <b>{{ formType === 'exhibition' ? '전시' : '특강' }}</b>
+                {{ editingId ? '수정' : '신규 등록' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <!-- 폼 숨김 상태 -->
+            <div v-if="!showForm" class="empty-state">
+              <div class="empty-title">폼이 닫혀 있어요</div>
+              <div class="empty-desc">왼쪽 목록에서 선택하거나, 아래에서 새로 만드세요.</div>
+
+              <div class="empty-actions">
+                <button type="button" class="btn" :disabled="saving" @click="openNew('exhibition')">새 전시</button>
+                <button type="button" class="btn" :disabled="saving" @click="openNew('lecture')">새 특강</button>
+              </div>
+            </div>
+
+            <!-- 전시 폼 -->
+            <template v-else-if="formType === 'exhibition'">
+              <div class="grid">
+                <label class="field">
+                  <span class="label">전시 제목 *</span>
+                  <input v-model="exForm.title" class="input" type="text" placeholder="예) 봄의 색채" />
+                </label>
+
+                <label class="field">
+                  <span class="label">작가명</span>
+                  <input v-model="exForm.artistName" class="input" type="text" placeholder="예) 홍길동" />
+                </label>
+
+                <label class="field">
+                  <span class="label">카드 이름</span>
+                  <input v-model="exForm.cardName" class="input" type="text" placeholder="예) 영선갤러리 기획전" />
+                </label>
+
+                <label class="field">
+                  <span class="label">전시 시작일</span>
+                  <input v-model="exForm.startDate" class="input" type="date" />
+                </label>
+
+                <label class="field">
+                  <span class="label">전시 종료일</span>
+                  <input v-model="exForm.endDate" class="input" type="date" />
+                </label>
+
+                <label class="field wide">
+                  <span class="label">전시 포스터 이미지 URL</span>
+                  <input v-model="exForm.imageUrl" class="input" type="url" placeholder="https://..." />
+                </label>
+
+                <label class="field wide">
+                  <span class="label">연결할 특강(선택)</span>
+                  <select v-model="exForm.lectureId" class="input">
+                    <option value="">(연결 없음)</option>
+                    <option v-for="lec in lectureOptions" :key="lec.id" :value="lec.id">
+                      {{ lec.title || "(특강명 없음)" }} · {{ formatLectureText(lec) }}
+                    </option>
+                  </select>
+                  <span class="hint">전시는 특강을 “선택(lectureId)”으로만 연결합니다.</span>
+                </label>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- 연결된 특강 미리보기 -->
+              <div class="link-preview" v-if="linkedLecture">
+                <div class="lp-title">연결된 특강</div>
+                <div class="lp-row">
+                  <div class="lp-name">{{ linkedLecture.title || "(특강명 없음)" }}</div>
+                  <div class="lp-meta">{{ linkedLecture.instructor || "-" }} · {{ formatLectureText(linkedLecture) }}</div>
+                </div>
+                <button type="button" class="btn subtle" @click="exForm.lectureId=''" :disabled="saving">
+                  연결 해제
+                </button>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- 액션 -->
+              <div class="actions">
+                <button type="button" class="btn" @click="closeForm" :disabled="saving">닫기</button>
+                <button type="button" class="btn primary" @click="handleSave" :disabled="!canSave || saving">
+                  {{ saving ? "저장 중..." : "저장" }}
+                </button>
+                <button
+                  v-if="editingId"
+                  type="button"
+                  class="btn danger"
+                  @click="handleDelete"
+                  :disabled="saving"
+                >
+                  {{ saving ? "처리 중..." : "삭제" }}
+                </button>
+              </div>
+            </template>
+
+            <!-- 특강 폼 -->
+            <template v-else>
+              <div class="grid">
+                <label class="field">
+                  <span class="label">특강명 *</span>
+                  <input v-model="lecForm.title" class="input" type="text" placeholder="예) 작가와의 대화" />
+                </label>
+
+                <label class="field">
+                  <span class="label">강사</span>
+                  <input v-model="lecForm.instructor" class="input" type="text" placeholder="예) 홍길동" />
+                </label>
+
+                <label class="field">
+                  <span class="label">특강 날짜 *</span>
+                  <input v-model="lecForm.date" class="input" type="date" />
+                </label>
+
+                <label class="field">
+                  <span class="label">특강 시간</span>
+                  <input v-model="lecForm.time" class="input" type="time" />
+                </label>
+
+                <label class="field wide">
+                  <span class="label">특강 이미지 URL (선택)</span>
+                  <input v-model="lecForm.imageUrl" class="input" type="url" placeholder="https://... (선택)" />
+                </label>
+              </div>
+
+              <div class="divider"></div>
+
+              <div class="actions">
+                <button type="button" class="btn" @click="closeForm" :disabled="saving">닫기</button>
+                <button type="button" class="btn primary" @click="handleSave" :disabled="!canSave || saving">
+                  {{ saving ? "저장 중..." : "저장" }}
+                </button>
+                <button
+                  v-if="editingId"
+                  type="button"
+                  class="btn danger"
+                  @click="handleDelete"
+                  :disabled="saving"
+                >
+                  {{ saving ? "처리 중..." : "삭제" }}
+                </button>
+              </div>
+            </template>
+          </div>
+        </section>
+
+        <!-- Storage (기존 연결 유지) -->
+        <section class="side-box">
+          <StorageUsageBox
+            docPath="admin/stats"
+            usedField="storageUsedBytes"
+            updatedAtField="storageUpdatedAt"
+            :limitBytes="1024 ** 3"
+            :subscribe="true"
+            :showRefresh="true"
+            :showInit="true"
+            title="Storage"
+            note="* 관리자 페이지를 통해 업로드/삭제된 파일 기준으로 계산됩니다."
+          />
+        </section>
       </aside>
     </section>
   </section>
@@ -386,62 +303,21 @@ import {
   collection,
   doc,
   addDoc,
-  getDocs,
-  query,
-  where,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
   serverTimestamp,
   Timestamp,
-  writeBatch,
-  onSnapshot,
-  setDoc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-const mode = ref("exhibition"); // 'exhibition' | 'lecture'
-const filterTab = ref("all"); // 'all' | 'exhibition' | 'lecture'
-
-const qText = ref("");
-const q = qText;
+import StorageUsageBox from "@/components/admin/StorageUsageBox.vue";
+import { bumpStorageUsedBytes, estimateDocBytes } from "@/lib/storageUsage";
 
 const saving = ref(false);
 const loading = ref(true);
 const errorMsg = ref("");
 const okMsg = ref("");
-
-const selectedKey = ref(""); // 카드 키(타입+id)
-const selectedType = ref(""); // 'exhibition' | 'lecture'
-const selectedId = ref(""); // 해당 타입의 id
-
-// ✅ 페이지링
-const pageSize = 20;
-const page = ref(1);
-
-const exForm = reactive({
-  title: "",
-  artistName: "",
-  cardName: "",
-  startDate: "",
-  endDate: "",
-  imageUrl: "",
-  hasLecture: false,
-  lectureId: "",
-});
-
-const lecInEx = reactive({
-  title: "",
-  instructor: "",
-  date: "",
-  time: "",
-  imageUrl: "",
-});
-
-const lecOnly = reactive({
-  title: "",
-  instructor: "",
-  date: "",
-  time: "",
-  imageUrl: "",
-});
 
 function clearMsgs() {
   errorMsg.value = "";
@@ -452,27 +328,52 @@ function setOk(msg) {
   errorMsg.value = "";
   setTimeout(() => {
     if (okMsg.value === msg) okMsg.value = "";
-  }, 3000);
+  }, 2500);
 }
 function setErr(msg) {
   errorMsg.value = msg;
   okMsg.value = "";
 }
 
-function dateToTimestamp(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(`${dateStr}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  return Timestamp.fromDate(d);
-}
-function lectureDateTimeToTimestamp(dateStr, timeStr) {
-  if (!dateStr) return null;
-  const t = timeStr || "00:00";
-  const d = new Date(`${dateStr}T${t}:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  return Timestamp.fromDate(d);
-}
+/** ====== Firestore 로드(전시/특강) ====== */
+const exhibitions = ref([]); // raw docs {id, ...}
+const lectures = ref([]); // raw docs {id, ...}
 
+let unsubEx = null;
+let unsubLec = null;
+
+onMounted(() => {
+  loading.value = true;
+
+  unsubEx = onSnapshot(
+    collection(db, "exhibitions"),
+    (snap) => {
+      exhibitions.value = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+      loading.value = false;
+    },
+    (err) => {
+      loading.value = false;
+      setErr(err?.message || "전시를 불러오지 못했습니다.");
+    }
+  );
+
+  unsubLec = onSnapshot(
+    collection(db, "lectures"),
+    (snap) => {
+      lectures.value = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+    },
+    (err) => {
+      setErr(err?.message || "특강을 불러오지 못했습니다.");
+    }
+  );
+});
+
+onBeforeUnmount(() => {
+  if (unsubEx) unsubEx();
+  if (unsubLec) unsubLec();
+});
+
+/** ====== 유틸 ====== */
 function tsToDateInput(ts) {
   if (!ts) return "";
   const d = ts.toDate ? ts.toDate() : new Date(ts);
@@ -490,6 +391,19 @@ function tsToTimeInput(ts) {
   const mi = String(d.getMinutes()).padStart(2, "0");
   return `${hh}:${mi}`;
 }
+function dateToTimestamp(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return Timestamp.fromDate(d);
+}
+function lectureDateTimeToTimestamp(dateStr, timeStr) {
+  if (!dateStr) return null;
+  const t = timeStr || "00:00";
+  const d = new Date(`${dateStr}T${t}:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return Timestamp.fromDate(d);
+}
 function toMillisMaybe(v) {
   if (!v) return 0;
   if (v?.toMillis) return v.toMillis();
@@ -505,174 +419,97 @@ function formatLectureText(lec) {
   return "-";
 }
 
-/** 영구데이터(정본) */
-const base = ref({ exhibitions: [], lectures: [] });
+/** ====== 목록/검색/페이지 ====== */
+const filterTab = ref("exhibition"); // 'exhibition' | 'lecture'
+const q = ref("");
 
-async function loadLatestJson() {
-  try {
-    const baseUrl = import.meta.env.BASE_URL || "/";
-    const url = `${baseUrl}data/exhibitions.json`;
+const pageSize = 20;
+const page = ref(1);
 
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return;
-
-    const payload = await res.json();
-    const ex = Array.isArray(payload?.data?.exhibitions) ? payload.data.exhibitions : [];
-    const le = Array.isArray(payload?.data?.lectures) ? payload.data.lectures : [];
-
-    base.value.exhibitions = ex.filter((x) => x && !x.deleted);
-    base.value.lectures = le.filter((x) => x && !x.deleted);
-  } catch {}
-}
-
-/** Firestore 오버레이 */
-const exOverlay = ref([]);
-const lecOverlay = ref([]);
-
-let unsubEx = null;
-let unsubLec = null;
-
-function mergeById(baseArr, overlayArr) {
-  const map = new Map();
-  (baseArr || []).forEach((x) => {
-    if (x && x.id) map.set(x.id, { ...x });
-  });
-
-  (overlayArr || []).forEach((x) => {
-    if (!x || !x.id) return;
-    if (x.deleted) map.delete(x.id);
-    else {
-      const prev = map.get(x.id) || {};
-      map.set(x.id, { ...prev, ...x, id: x.id });
-    }
-  });
-
-  return Array.from(map.values());
-}
-
-function exhibitionSortKey(x) {
-  const a =
-    toMillisMaybe(x.startDate) ||
-    toMillisMaybe(x.endDate) ||
-    toMillisMaybe(x.updatedAt) ||
-    toMillisMaybe(x.createdAt);
-  return a || 0;
-}
-
-const mergedLectures = computed(() => {
-  const out = mergeById(base.value.lectures, lecOverlay.value);
-  return out
-    .filter((x) => x && x.id && !x.deleted)
-    .sort((a, b) => {
-      const am =
-        toMillisMaybe(a.dateTime) ||
-        toMillisMaybe(a.updatedAt) ||
-        toMillisMaybe(a.createdAt);
-      const bm =
-        toMillisMaybe(b.dateTime) ||
-        toMillisMaybe(b.updatedAt) ||
-        toMillisMaybe(b.createdAt);
-      return bm - am;
-    });
+watch([q, filterTab], () => {
+  page.value = 1;
 });
 
-const mergedExhibitions = computed(() => {
-  const out = mergeById(base.value.exhibitions, exOverlay.value);
-  return out
-    .filter((x) => x && x.id && !x.deleted)
+const exhibitionList = computed(() => {
+  // 최신 우선(시작/끝/업뎃/생성)
+  const arr = (exhibitions.value || []).slice();
+  return arr
+    .filter((x) => x && x.id)
     .map((x) => {
       const sd = x.startDate ? tsToDateInput(x.startDate) : "";
       const ed = x.endDate ? tsToDateInput(x.endDate) : "";
-      const periodText = sd && ed ? `${sd} ~ ${ed}` : (sd || ed || "-");
+      const period = sd && ed ? `${sd} ~ ${ed}` : (sd || ed || "-");
       return {
-        id: x.id,
-        title: x.title || "",
-        artistName: x.artistName || "",
-        cardName: x.cardName || "",
-        imageUrl: x.imageUrl || "",
-        hasLecture: !!x.hasLecture,
-        lectureId: x.lectureId || "",
-        startDate: x.startDate || null,
-        endDate: x.endDate || null,
-        createdAt: x.createdAt || null,
-        updatedAt: x.updatedAt || null,
-        periodText,
+        ...x,
+        periodText: period,
       };
     })
-    .sort((a, b) => exhibitionSortKey(b) - exhibitionSortKey(a));
+    .sort((a, b) => {
+      const am =
+        toMillisMaybe(a.startDate) ||
+        toMillisMaybe(a.endDate) ||
+        toMillisMaybe(a.updatedAt) ||
+        toMillisMaybe(a.createdAt);
+      const bm =
+        toMillisMaybe(b.startDate) ||
+        toMillisMaybe(b.endDate) ||
+        toMillisMaybe(b.updatedAt) ||
+        toMillisMaybe(b.createdAt);
+      return (bm || 0) - (am || 0);
+    });
 });
 
-/** 카드 목록 */
-const cards = computed(() => {
-  const exMap = new Map(mergedExhibitions.value.map((x) => [x.id, x]));
-  const list = [];
+const lectureList = computed(() => {
+  const arr = (lectures.value || []).slice();
+  return arr
+    .filter((x) => x && x.id)
+    .sort((a, b) => {
+      const am = toMillisMaybe(a.dateTime) || toMillisMaybe(a.updatedAt) || toMillisMaybe(a.createdAt);
+      const bm = toMillisMaybe(b.dateTime) || toMillisMaybe(b.updatedAt) || toMillisMaybe(b.createdAt);
+      return (bm || 0) - (am || 0);
+    });
+});
 
-  mergedExhibitions.value.forEach((ex) => {
-    list.push({
+const cards = computed(() => {
+  const s = (q.value || "").trim().toLowerCase();
+
+  if (filterTab.value === "exhibition") {
+    let arr = exhibitionList.value.map((ex) => ({
       key: `ex:${ex.id}`,
       type: "exhibition",
       id: ex.id,
-      title: ex.title,
+      title: ex.title || "",
       sub1: ex.artistName || "-",
-      sub2: ex.periodText,
-      imageUrl: ex.imageUrl || "",
-      hasLecture: !!ex.hasLecture,
+      sub2: ex.periodText || "-",
+      imageUrl: (ex.imageUrl || "").trim(),
+      lectureId: (ex.lectureId || "").trim(),
+      _raw: ex,
+    }));
+
+    if (!s) return arr;
+    return arr.filter((x) => {
+      return (
+        (x.title || "").toLowerCase().includes(s) ||
+        (x.sub1 || "").toLowerCase().includes(s) ||
+        (x.sub2 || "").toLowerCase().includes(s) ||
+        ((x._raw?.cardName || "") + "").toLowerCase().includes(s)
+      );
     });
-  });
-
-  mergedLectures.value.forEach((lec) => {
-    const exId = lec.exhibitionId || "";
-    const ex = exId ? exMap.get(exId) : null;
-
-    const isLinked =
-      !!exId && !!ex && !!ex.hasLecture && (ex.lectureId ? ex.lectureId === lec.id : true);
-
-    const isStandalone = !exId;
-
-    if (!isLinked && !isStandalone) return;
-
-    const fallbackImage = ex?.imageUrl || "";
-    list.push({
-      key: `lec:${lec.id}`,
-      type: "lecture",
-      id: lec.id,
-      exhibitionId: exId || "",
-      title: lec.title || "",
-      sub1: lec.instructor || "-",
-      sub2: formatLectureText(lec),
-      imageUrl: (lec.imageUrl || "").trim() || fallbackImage,
-      hasLecture: false,
-    });
-  });
-
-  function cardSortKey(c) {
-    if (c.type === "exhibition") {
-      const ex = mergedExhibitions.value.find((x) => x.id === c.id);
-      return ex ? exhibitionSortKey(ex) : 0;
-    }
-    const lec = mergedLectures.value.find((x) => x.id === c.id);
-    return (
-      toMillisMaybe(lec?.dateTime) ||
-      toMillisMaybe(lec?.updatedAt) ||
-      toMillisMaybe(lec?.createdAt) ||
-      0
-    );
   }
 
-  return list.sort((a, b) => cardSortKey(b) - cardSortKey(a));
-});
-
-/** 탭 + 검색 */
-const filteredCards = computed(() => {
-  const s = (qText.value || "").trim().toLowerCase();
-
-  let arr = cards.value;
-
-  if (filterTab.value === "exhibition") arr = arr.filter((x) => x.type === "exhibition");
-  if (filterTab.value === "lecture") arr = arr.filter((x) => x.type === "lecture");
+  let arr = lectureList.value.map((lec) => ({
+    key: `lec:${lec.id}`,
+    type: "lecture",
+    id: lec.id,
+    title: lec.title || "",
+    sub1: lec.instructor || "-",
+    sub2: formatLectureText(lec),
+    imageUrl: (lec.imageUrl || "").trim(),
+    lectureId: "",
+    _raw: lec,
+  }));
 
   if (!s) return arr;
-
   return arr.filter((x) => {
     return (
       (x.title || "").toLowerCase().includes(s) ||
@@ -682,23 +519,21 @@ const filteredCards = computed(() => {
   });
 });
 
-/** ✅ 페이지 계산 */
-const totalItems = computed(() => filteredCards.value.length);
+const totalItems = computed(() => cards.value.length);
 const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / pageSize)));
 
 const pagedCards = computed(() => {
   const p = Math.min(Math.max(1, page.value), totalPages.value);
   const start = (p - 1) * pageSize;
   const end = start + pageSize;
-  return filteredCards.value.slice(start, end);
+  return cards.value.slice(start, end);
 });
 
-/** ✅ 페이지 버튼(최대 7개) */
 const pageButtons = computed(() => {
   const tp = totalPages.value;
   const cur = Math.min(Math.max(1, page.value), tp);
-
   const maxBtns = 7;
+
   let start = Math.max(1, cur - Math.floor(maxBtns / 2));
   let end = start + maxBtns - 1;
   if (end > tp) {
@@ -711,136 +546,83 @@ const pageButtons = computed(() => {
   return out;
 });
 
-function clampPage() {
-  const tp = totalPages.value;
-  if (page.value < 1) page.value = 1;
-  if (page.value > tp) page.value = tp;
-}
-function goPage(p) {
-  page.value = p;
-  clampPage();
-}
-function goPrev() {
-  page.value = Math.max(1, page.value - 1);
-}
-function goNext() {
-  page.value = Math.min(totalPages.value, page.value + 1);
-}
-function goFirst() {
-  page.value = 1;
-}
-function goLast() {
-  page.value = totalPages.value;
-}
+function goPage(p) { page.value = p; }
+function goPrev() { page.value = Math.max(1, page.value - 1); }
+function goNext() { page.value = Math.min(totalPages.value, page.value + 1); }
+function goFirst() { page.value = 1; }
+function goLast() { page.value = totalPages.value; }
 
-/** ✅ 검색/탭 변경 시 1페이지로 */
-watch([qText, filterTab], () => {
-  page.value = 1;
+/** ====== 폼(기본 숨김) ====== */
+const showForm = ref(false);
+const formType = ref("exhibition"); // 'exhibition' | 'lecture'
+const editingId = ref(""); // 선택된 doc id
+const selectedKey = ref("");
+
+const exForm = reactive({
+  title: "",
+  artistName: "",
+  cardName: "",
+  startDate: "",
+  endDate: "",
+  imageUrl: "",
+  lectureId: "",
 });
 
-onMounted(async () => {
-  loading.value = true;
-  await loadLatestJson();
-
-  unsubEx = onSnapshot(
-    collection(db, "exhibitions"),
-    (snap) => {
-      exOverlay.value = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
-      loading.value = false;
-    },
-    (err) => {
-      loading.value = false;
-      setErr(err?.message || "전시 임시 기록(Firestore)을 불러오지 못했습니다.");
-    }
-  );
-
-  unsubLec = onSnapshot(
-    collection(db, "lectures"),
-    (snap) => {
-      lecOverlay.value = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
-    },
-    (err) => {
-      setErr(err?.message || "특강 임시 기록(Firestore)을 불러오지 못했습니다.");
-    }
-  );
+const lecForm = reactive({
+  title: "",
+  instructor: "",
+  date: "",
+  time: "",
+  imageUrl: "",
 });
 
-onBeforeUnmount(() => {
-  if (unsubEx) unsubEx();
-  if (unsubLec) unsubLec();
-});
-
-function findExById(id) {
-  return mergedExhibitions.value.find((x) => x.id === id) || null;
-}
-function findLectureById(id) {
-  return mergedLectures.value.find((x) => x.id === id) || null;
-}
-function findLectureByExhibitionId(exId) {
-  return mergedLectures.value.find((x) => x.exhibitionId === exId) || null;
-}
-
-/** 새 전시 / 새 특강 */
-function newExhibition() {
-  clearMsgs();
-  mode.value = "exhibition";
-  selectedKey.value = "";
-  selectedType.value = "";
-  selectedId.value = "";
-
+function resetExForm() {
   exForm.title = "";
   exForm.artistName = "";
   exForm.cardName = "";
   exForm.startDate = "";
   exForm.endDate = "";
   exForm.imageUrl = "";
-  exForm.hasLecture = false;
   exForm.lectureId = "";
-
-  lecInEx.title = "";
-  lecInEx.instructor = "";
-  lecInEx.date = "";
-  lecInEx.time = "";
-  lecInEx.imageUrl = "";
-
-  lecOnly.title = "";
-  lecOnly.instructor = "";
-  lecOnly.date = "";
-  lecOnly.time = "";
-  lecOnly.imageUrl = "";
 }
-function newLecture() {
+
+function resetLecForm() {
+  lecForm.title = "";
+  lecForm.instructor = "";
+  lecForm.date = "";
+  lecForm.time = "";
+  lecForm.imageUrl = "";
+}
+
+function closeForm() {
   clearMsgs();
-  mode.value = "lecture";
+  showForm.value = false;
+  editingId.value = "";
   selectedKey.value = "";
-  selectedType.value = "";
-  selectedId.value = "";
-
-  lecOnly.title = "";
-  lecOnly.instructor = "";
-  lecOnly.date = "";
-  lecOnly.time = "";
-  lecOnly.imageUrl = "";
-
-  exForm.lectureId = "";
-  lecInEx.title = "";
-  lecInEx.instructor = "";
-  lecInEx.date = "";
-  lecInEx.time = "";
-  lecInEx.imageUrl = "";
+  resetExForm();
+  resetLecForm();
 }
 
-/** 카드 선택 */
-async function selectCard(item) {
+function openNew(type) {
+  clearMsgs();
+  showForm.value = true;
+  formType.value = type;
+  editingId.value = "";
+  selectedKey.value = "";
+
+  resetExForm();
+  resetLecForm();
+}
+
+function selectCard(item) {
   clearMsgs();
   selectedKey.value = item.key;
-  selectedType.value = item.type;
-  selectedId.value = item.id;
+  showForm.value = true;
+  formType.value = item.type;
+  editingId.value = item.id;
 
   if (item.type === "exhibition") {
-    mode.value = "exhibition";
-
-    const ex = findExById(item.id);
+    const ex = exhibitionList.value.find((x) => x.id === item.id);
     if (!ex) return setErr("전시 데이터를 찾을 수 없습니다.");
 
     exForm.title = ex.title || "";
@@ -849,187 +631,155 @@ async function selectCard(item) {
     exForm.imageUrl = ex.imageUrl || "";
     exForm.startDate = ex.startDate ? tsToDateInput(ex.startDate) : "";
     exForm.endDate = ex.endDate ? tsToDateInput(ex.endDate) : "";
-    exForm.hasLecture = !!ex.hasLecture;
-    exForm.lectureId = ex.lectureId || "";
+    exForm.lectureId = (ex.lectureId || "").trim();
 
-    lecInEx.title = "";
-    lecInEx.instructor = "";
-    lecInEx.date = "";
-    lecInEx.time = "";
-    lecInEx.imageUrl = "";
-
-    if (exForm.hasLecture) {
-      let lec = null;
-      if (exForm.lectureId) lec = findLectureById(exForm.lectureId);
-      if (!lec) {
-        lec = findLectureByExhibitionId(item.id);
-        if (lec?.id) exForm.lectureId = lec.id;
-      }
-      if (lec) {
-        lecInEx.title = lec.title || "";
-        lecInEx.instructor = lec.instructor || "";
-        lecInEx.imageUrl = lec.imageUrl || "";
-        lecInEx.date = lec.dateTime ? tsToDateInput(lec.dateTime) : "";
-        lecInEx.time = lec.dateTime ? tsToTimeInput(lec.dateTime) : "";
-      }
-    }
+    resetLecForm();
     return;
   }
 
-  mode.value = "lecture";
-
-  const lec = findLectureById(item.id);
+  const lec = lectureList.value.find((x) => x.id === item.id);
   if (!lec) return setErr("특강 데이터를 찾을 수 없습니다.");
 
-  lecOnly.title = lec.title || "";
-  lecOnly.instructor = lec.instructor || "";
-  lecOnly.imageUrl = lec.imageUrl || "";
-  lecOnly.date = lec.dateTime ? tsToDateInput(lec.dateTime) : "";
-  lecOnly.time = lec.dateTime ? tsToTimeInput(lec.dateTime) : "";
+  lecForm.title = lec.title || "";
+  lecForm.instructor = lec.instructor || "";
+  lecForm.imageUrl = lec.imageUrl || "";
+  lecForm.date = lec.dateTime ? tsToDateInput(lec.dateTime) : "";
+  lecForm.time = lec.dateTime ? tsToTimeInput(lec.dateTime) : "";
+
+  resetExForm();
 }
 
-/** 저장 가능 여부 */
+/** 전시 폼에서 “연결할 특강 목록” */
+const lectureOptions = computed(() => lectureList.value);
+
+const linkedLecture = computed(() => {
+  const id = (exForm.lectureId || "").trim();
+  if (!id) return null;
+  return lectureList.value.find((x) => x.id === id) || null;
+});
+
+/** ====== 저장 가능 여부 ====== */
 const canSave = computed(() => {
   if (saving.value) return false;
 
-  if (mode.value === "exhibition") {
-    const exTitleOk = (exForm.title || "").trim().length > 0;
-    if (!exTitleOk) return false;
-
-    if (!exForm.hasLecture) return true;
-
-    const lecTitleOk = (lecInEx.title || "").trim().length > 0;
-    const lecDateOk = !!lecInEx.date;
-    return lecTitleOk && lecDateOk;
+  if (formType.value === "exhibition") {
+    return (exForm.title || "").trim().length > 0;
   }
 
-  const tOk = (lecOnly.title || "").trim().length > 0;
-  const dOk = !!lecOnly.date;
+  const tOk = (lecForm.title || "").trim().length > 0;
+  const dOk = !!lecForm.date;
   return tOk && dOk;
 });
 
-/** 저장 */
+/** ====== Storage bytes(추정) 계산용: serverTimestamp 제거 ====== */
+function safeEstimate(obj) {
+  // serverTimestamp(FieldValue)는 stringify 불가라서 제거/치환
+  // Timestamp는 stringify 가능하므로 그대로 둬도 OK
+  try {
+    return estimateDocBytes(obj);
+  } catch {
+    // 최후 안전망
+    try {
+      return estimateDocBytes(JSON.parse(JSON.stringify(obj ?? {})));
+    } catch {
+      return 0;
+    }
+  }
+}
+
+/** ====== 저장 ====== */
 async function handleSave() {
   clearMsgs();
 
   if (!canSave.value) {
-    if (mode.value === "exhibition") setErr("전시 제목은 필수입니다.");
-    else setErr("특강명/특강 날짜는 필수입니다.");
+    setErr(formType.value === "exhibition" ? "전시 제목은 필수입니다." : "특강명/특강 날짜는 필수입니다.");
     return;
   }
 
   saving.value = true;
 
   try {
-    if (mode.value === "exhibition") {
-      const exPayload = {
-        deleted: false,
+    if (formType.value === "exhibition") {
+      const exId = editingId.value;
+
+      const payload = {
         title: (exForm.title || "").trim(),
         artistName: (exForm.artistName || "").trim(),
         cardName: (exForm.cardName || "").trim(),
         imageUrl: (exForm.imageUrl || "").trim(),
         startDate: dateToTimestamp(exForm.startDate),
         endDate: dateToTimestamp(exForm.endDate),
-        hasLecture: !!exForm.hasLecture,
+        lectureId: (exForm.lectureId || "").trim(),
         updatedAt: serverTimestamp(),
       };
 
-      let exId = selectedType.value === "exhibition" ? selectedId.value : "";
+      // bytes: serverTimestamp 제외 버전으로 계산
+      const payloadForBytes = {
+        ...payload,
+        updatedAt: null,
+      };
+
+      const prev =
+        exId ? exhibitionList.value.find((x) => x.id === exId) : null;
+      const prevBytes = safeEstimate(prev);
+      const nextBytes = safeEstimate(payloadForBytes);
+
       if (!exId) {
         const created = await addDoc(collection(db, "exhibitions"), {
-          ...exPayload,
+          ...payload,
           createdAt: serverTimestamp(),
         });
-        exId = created.id;
-        selectedKey.value = `ex:${exId}`;
-        selectedType.value = "exhibition";
-        selectedId.value = exId;
-      } else {
-        await setDoc(doc(db, "exhibitions", exId), exPayload, { merge: true });
-      }
+        editingId.value = created.id;
+        selectedKey.value = `ex:${created.id}`;
 
-      if (exForm.hasLecture) {
-        const dt = lectureDateTimeToTimestamp(lecInEx.date, lecInEx.time);
-
-        const lecPayload = {
-          deleted: false,
-          exhibitionId: exId,
-          title: (lecInEx.title || "").trim(),
-          instructor: (lecInEx.instructor || "").trim(),
-          imageUrl: (lecInEx.imageUrl || "").trim(),
-          dateTime: dt,
-          updatedAt: serverTimestamp(),
-        };
-
-        let lecId = exForm.lectureId;
-
-        if (!lecId) {
-          const createdLecture = await addDoc(collection(db, "lectures"), {
-            ...lecPayload,
-            createdAt: serverTimestamp(),
-          });
-          lecId = createdLecture.id;
-          exForm.lectureId = lecId;
-        } else {
-          await setDoc(doc(db, "lectures", lecId), lecPayload, { merge: true });
-        }
-
-        await setDoc(
-          doc(db, "exhibitions", exId),
-          { hasLecture: true, lectureId: lecId, deleted: false, updatedAt: serverTimestamp() },
-          { merge: true }
-        );
-
-        setOk("저장되었습니다. (전시 + 특강)");
-      } else {
-        if (exForm.lectureId) {
-          await setDoc(
-            doc(db, "lectures", exForm.lectureId),
-            { deleted: true, updatedAt: serverTimestamp(), exhibitionId: exId },
-            { merge: true }
-          );
-          exForm.lectureId = "";
-        }
-
-        await setDoc(
-          doc(db, "exhibitions", exId),
-          { hasLecture: false, lectureId: "", deleted: false, updatedAt: serverTimestamp() },
-          { merge: true }
-        );
-
+        await bumpStorageUsedBytes(nextBytes);
         setOk("저장되었습니다. (전시)");
+      } else {
+        await setDoc(doc(db, "exhibitions", exId), payload, { merge: true });
+
+        await bumpStorageUsedBytes(nextBytes - prevBytes);
+        setOk("저장되었습니다. (전시 수정)");
       }
 
       return;
     }
 
-    const dt = lectureDateTimeToTimestamp(lecOnly.date, lecOnly.time);
+    // ===== 특강 저장 =====
+    const lecId = editingId.value;
 
-    const lecPayload = {
-      deleted: false,
-      exhibitionId: "",
-      title: (lecOnly.title || "").trim(),
-      instructor: (lecOnly.instructor || "").trim(),
-      imageUrl: (lecOnly.imageUrl || "").trim(),
+    const dt = lectureDateTimeToTimestamp(lecForm.date, lecForm.time);
+
+    const payload = {
+      title: (lecForm.title || "").trim(),
+      instructor: (lecForm.instructor || "").trim(),
+      imageUrl: (lecForm.imageUrl || "").trim(),
       dateTime: dt,
       updatedAt: serverTimestamp(),
     };
 
-    let lecId = selectedType.value === "lecture" ? selectedId.value : "";
+    const payloadForBytes = { ...payload, updatedAt: null };
+
+    const prev =
+      lecId ? lectureList.value.find((x) => x.id === lecId) : null;
+    const prevBytes = safeEstimate(prev);
+    const nextBytes = safeEstimate(payloadForBytes);
+
     if (!lecId) {
-      const createdLecture = await addDoc(collection(db, "lectures"), {
-        ...lecPayload,
+      const created = await addDoc(collection(db, "lectures"), {
+        ...payload,
         createdAt: serverTimestamp(),
       });
-      lecId = createdLecture.id;
-      selectedKey.value = `lec:${lecId}`;
-      selectedType.value = "lecture";
-      selectedId.value = lecId;
-    } else {
-      await setDoc(doc(db, "lectures", lecId), lecPayload, { merge: true });
-    }
+      editingId.value = created.id;
+      selectedKey.value = `lec:${created.id}`;
 
-    setOk("저장되었습니다. (특강)");
+      await bumpStorageUsedBytes(nextBytes);
+      setOk("저장되었습니다. (특강)");
+    } else {
+      await setDoc(doc(db, "lectures", lecId), payload, { merge: true });
+
+      await bumpStorageUsedBytes(nextBytes - prevBytes);
+      setOk("저장되었습니다. (특강 수정)");
+    }
   } catch (e) {
     setErr(e?.message || "저장 중 오류가 발생했습니다.");
   } finally {
@@ -1037,64 +787,41 @@ async function handleSave() {
   }
 }
 
-/** 삭제 */
+/** ====== 삭제(실제 Firestore 문서 삭제) ====== */
 async function handleDelete() {
   clearMsgs();
+  if (!editingId.value) return;
 
-  if (!selectedKey.value || !selectedType.value || !selectedId.value) return;
-  if (!confirm("정말 삭제할까요? (정해진 시간 발행 시 영구데이터에서도 삭제됩니다)")) return;
+  const typeLabel = formType.value === "exhibition" ? "전시" : "특강";
+  if (!confirm(`정말 삭제할까요? (${typeLabel} 문서가 Firestore에서 실제 삭제됩니다)`)) return;
 
   saving.value = true;
 
   try {
-    const batch = writeBatch(db);
+    const id = editingId.value;
 
-    if (selectedType.value === "exhibition") {
-      const exId = selectedId.value;
+    if (formType.value === "exhibition") {
+      const prev = exhibitionList.value.find((x) => x.id === id);
+      const prevBytes = safeEstimate(prev);
 
-      batch.set(
-        doc(db, "exhibitions", exId),
-        { deleted: true, updatedAt: serverTimestamp() },
-        { merge: true }
-      );
+      await deleteDoc(doc(db, "exhibitions", id));
+      if (prevBytes > 0) await bumpStorageUsedBytes(-prevBytes);
 
-      const ex = findExById(exId);
-      if (ex?.lectureId) {
-        batch.set(
-          doc(db, "lectures", ex.lectureId),
-          { deleted: true, updatedAt: serverTimestamp(), exhibitionId: exId },
-          { merge: true }
-        );
-      }
-
-      const lecQ = query(collection(db, "lectures"), where("exhibitionId", "==", exId));
-      const lecSnap = await getDocs(lecQ);
-      lecSnap.forEach((d) => {
-        batch.set(
-          doc(db, "lectures", d.id),
-          { deleted: true, updatedAt: serverTimestamp(), exhibitionId: exId },
-          { merge: true }
-        );
-      });
-
-      await batch.commit();
-      newExhibition();
-      setOk("삭제 요청이 기록되었습니다. (전시 + 연결 특강)");
+      closeForm();
+      setOk("삭제되었습니다. (전시)");
       return;
     }
 
-    const lecId = selectedId.value;
-    batch.set(
-      doc(db, "lectures", lecId),
-      { deleted: true, updatedAt: serverTimestamp() },
-      { merge: true }
-    );
-    await batch.commit();
+    const prev = lectureList.value.find((x) => x.id === id);
+    const prevBytes = safeEstimate(prev);
 
-    newLecture();
-    setOk("삭제 요청이 기록되었습니다. (특강)");
+    await deleteDoc(doc(db, "lectures", id));
+    if (prevBytes > 0) await bumpStorageUsedBytes(-prevBytes);
+
+    closeForm();
+    setOk("삭제되었습니다. (특강)");
   } catch (e) {
-    setErr(e?.message || "삭제 처리 중 오류가 발생했습니다.");
+    setErr(e?.message || "삭제 중 오류가 발생했습니다.");
   } finally {
     saving.value = false;
   }
@@ -1105,14 +832,14 @@ async function handleDelete() {
 .admin-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 /* Header */
 .page-head {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .head-top {
@@ -1129,62 +856,19 @@ async function handleDelete() {
 }
 .home-link:hover { color: #111; }
 
-.head-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
 .title {
   font-size: 18px;
   font-weight: 600;
   margin: 0;
 }
-
 .desc {
   font-size: 13px;
   color: #666;
   margin: 6px 0 0;
 }
-
-.msg {
-  margin: 10px 0 0;
-  font-size: 12px;
-}
+.msg { margin: 10px 0 0; font-size: 12px; }
 .msg.ok { color: #0b6b2f; }
 .msg.error { color: #b00020; }
-
-.btn {
-  border: 1px solid rgba(0,0,0,0.12);
-  background: #fff;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 12px;
-  cursor: pointer;
-}
-.btn:hover { background: rgba(0,0,0,0.03); }
-.btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.btn.primary {
-  background: #111;
-  color: #fff;
-  border-color: rgba(0,0,0,0.12);
-}
-.btn.primary:hover { background: #000; }
-
-.btn.danger {
-  border-color: rgba(176,0,32,0.22);
-  color: #b00020;
-}
-.btn.danger:hover { background: rgba(176,0,32,0.06); }
-.btn.subtle { padding: 8px 10px; border-radius: 9px; }
-
-/* ✅ Single column layout */
-.layout.single {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
 
 /* Panels */
 .panel {
@@ -1198,367 +882,260 @@ async function handleDelete() {
   padding: 14px 14px 10px;
   border-bottom: 1px solid rgba(0,0,0,0.06);
 }
+.panel-title { font-size: 13px; font-weight: 600; color: #111; }
+.panel-sub { margin-top: 4px; font-size: 12px; color: #777; }
+.panel-body { padding: 14px; }
 
-.panel-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #111;
+/* Layout */
+.layout{
+  display:flex;
+  gap: 16px;
+  align-items: flex-start;
 }
 
-.panel-sub {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #777;
+.list-panel{
+  flex: 1 1 58%;
+  min-width: 0;
 }
 
-.panel-body {
-  padding: 14px;
+.right-col{
+  flex: 1 1 42%;
+  min-width: 320px;
+  display:flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.panel-foot {
-  padding: 12px 14px;
-  border-top: 1px solid rgba(0,0,0,0.06);
-  display: flex;
-  justify-content: flex-end;
+.side-box{
+  position: sticky;
+  top: 12px;
 }
 
-/* ✅ 스크롤바 숨김(스크롤은 유지) */
+/* List wrap */
 .list-wrap {
   overflow: auto;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-.list-wrap::-webkit-scrollbar { display: none; }
+.list-wrap::-webkit-scrollbar { display:none; }
 
 /* Tabs */
-.tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.tab {
+.tabs { display:flex; gap:8px; margin-bottom: 10px; }
+.tab{
   border: 1px solid rgba(0,0,0,0.10);
-  background: #fff;
+  background:#fff;
   border-radius: 999px;
   padding: 8px 10px;
   font-size: 12px;
-  cursor: pointer;
-}
-.tab:hover { background: rgba(0,0,0,0.03); }
-.tab.active {
-  background: #111;
-  color: #fff;
-  border-color: rgba(0,0,0,0.12);
-}
-
-/* List */
-.search-row { margin-bottom: 12px; }
-
-.search {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid rgba(0,0,0,0.12);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 12px;
-  outline: none;
-}
-
-.list {
-  display: grid;
-  gap: 10px;
-}
-
-.list-item {
-  width: 100%;
-  text-align: left;
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 12px;
-  background: #fff;
-  padding: 12px;
-  cursor: pointer;
-}
-.list-item:hover { background: rgba(0,0,0,0.02); }
-.list-item.active { border-color: rgba(0,0,0,0.18); background: rgba(0,0,0,0.03); }
-
-.list-item.row {
-  display: grid;
-  grid-template-columns: 76px 1fr;
-  gap: 12px;
-  align-items: center;
-}
-
-/* Thumbnail */
-.thumb {
-  width: 76px;
-  height: 76px;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid rgba(0,0,0,0.08);
-  background: rgba(0,0,0,0.03);
-}
-.thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.thumb-ph {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02));
-}
-
-.li-main { min-width: 0; }
-
-.li-title {
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-.li-meta {
-  font-size: 12px;
-  color: #666;
-}
-
-.li-badges {
-  margin-top: 8px;
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.empty {
-  padding: 14px 6px 6px;
-  font-size: 12px;
-  color: #777;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(0,0,0,0.10);
-  font-size: 11px;
-  color: #333;
-  background: rgba(0,0,0,0.03);
-}
-.badge.ghost {
-  background: transparent;
-  color: #777;
-}
-
-/* Form */
-.form { display: flex; flex-direction: column; gap: 14px; }
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field.wide { grid-column: 1 / -1; }
-
-.label {
-  font-size: 12px;
-  color: #666;
-}
-
-.input {
-  border: 1px solid rgba(0,0,0,0.12);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 12px;
-  outline: none;
-}
-.input:focus { border-color: rgba(0,0,0,0.22); }
-
-.hint {
-  font-size: 11px;
-  color: #888;
-}
-
-.divider {
-  height: 1px;
-  background: rgba(0,0,0,0.06);
-  margin: 2px 0;
-}
-
-/* Pager */
-.pager{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin: 0 0 12px;
-  padding: 10px 10px;
-  border: 1px solid rgba(0,0,0,0.06);
-  border-radius: 12px;
-  background: rgba(0,0,0,0.02);
-}
-.pager-text{
-  font-size:12px;
-  color:#666;
-}
-.pager-right{
-  display:flex;
-  gap:6px;
-  flex-wrap:wrap;
-  justify-content:flex-end;
-}
-.pbtn{
-  border:1px solid rgba(0,0,0,0.12);
-  background:#fff;
-  border-radius:10px;
-  padding:8px 10px;
-  font-size:12px;
   cursor:pointer;
 }
-.pbtn:hover{ background: rgba(0,0,0,0.03); }
-.pbtn:disabled{ opacity:0.55; cursor:not-allowed; }
-.pbtn.num{ min-width: 40px; text-align:center; }
-.pbtn.active{
+.tab:hover{ background: rgba(0,0,0,0.03); }
+.tab.active{
   background:#111;
   color:#fff;
   border-color: rgba(0,0,0,0.12);
 }
 
-/* Toggle */
-.toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
-}
-
-.toggle-title {
-  font-size: 13px;
-  font-weight: 600;
-}
-.toggle-desc {
+/* Search */
+.search-row{ margin-bottom: 12px; }
+.search{
+  width:100%;
+  box-sizing: border-box;
+  border:1px solid rgba(0,0,0,0.12);
+  border-radius: 10px;
+  padding: 10px 12px;
   font-size: 12px;
-  color: #777;
-  margin-top: 4px;
+  outline:none;
+}
+.search:focus{ border-color: rgba(0,0,0,0.22); }
+
+/* Pager */
+.pager{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap:10px;
+  margin: 0 0 12px;
+  padding: 10px 10px;
+  border:1px solid rgba(0,0,0,0.06);
+  border-radius: 12px;
+  background: rgba(0,0,0,0.02);
+}
+.pager-text{ font-size: 12px; color:#666; }
+.pager-right{ display:flex; gap:6px; flex-wrap: wrap; justify-content: flex-end; }
+.pbtn{
+  border:1px solid rgba(0,0,0,0.12);
+  background:#fff;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  cursor:pointer;
+}
+.pbtn:hover{ background: rgba(0,0,0,0.03); }
+.pbtn:disabled{ opacity:0.55; cursor:not-allowed; }
+.pbtn.num{ min-width: 40px; text-align:center; }
+.pbtn.active{ background:#111; color:#fff; border-color: rgba(0,0,0,0.12); }
+
+/* List items */
+.list{ display:grid; gap:10px; }
+.list-item{
+  width:100%;
+  text-align:left;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  background:#fff;
+  padding: 12px;
+  cursor:pointer;
+}
+.list-item:hover{ background: rgba(0,0,0,0.02); }
+.list-item.active{ border-color: rgba(0,0,0,0.18); background: rgba(0,0,0,0.03); }
+
+.list-item.row{
+  display:grid;
+  grid-template-columns: 76px 1fr;
+  gap: 12px;
+  align-items: center;
 }
 
-.switch {
-  position: relative;
-  width: 44px;
-  height: 26px;
-  display: inline-block;
+.thumb{
+  width:76px;
+  height:76px;
+  border-radius: 12px;
+  overflow:hidden;
+  border:1px solid rgba(0,0,0,0.08);
+  background: rgba(0,0,0,0.03);
 }
-.switch input { display: none; }
-.slider {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: rgba(0,0,0,0.14);
-  transition: all 0.15s ease;
+.thumb img{
+  width:100%;
+  height:100%;
+  object-fit: cover;
+  display:block;
 }
-.slider:before {
-  content: "";
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  left: 3px;
-  top: 3px;
-  border-radius: 999px;
-  background: #fff;
-  transition: all 0.15s ease;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-}
-.switch input:checked + .slider {
-  background: rgba(0,0,0,0.70);
-}
-.switch input:checked + .slider:before {
-  transform: translateX(18px);
+.thumb-ph{
+  width:100%;
+  height:100%;
+  background: linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02));
 }
 
-/* Lecture box */
-.lecture-box {
+.li-main{ min-width:0; }
+.li-title{ font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.li-meta{ font-size: 12px; color:#666; }
+.li-badges{
+  margin-top: 8px;
+  display:flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.empty{ padding: 14px 6px 6px; font-size: 12px; color:#777; }
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  height:22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.10);
+  font-size: 11px;
+  color:#333;
+  background: rgba(0,0,0,0.03);
+}
+.badge.ghost{ background: transparent; color:#777; }
+
+/* Form */
+.grid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.field{ display:flex; flex-direction: column; gap:6px; }
+.field.wide{ grid-column: 1 / -1; }
+.label{ font-size: 12px; color:#666; }
+.input{
+  border:1px solid rgba(0,0,0,0.12);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  outline:none;
+  background:#fff;
+}
+.input:focus{ border-color: rgba(0,0,0,0.22); }
+.hint{ font-size: 11px; color:#888; }
+.divider{ height:1px; background: rgba(0,0,0,0.06); margin: 14px 0; }
+
+.actions{
+  display:flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+.btn{
+  border:1px solid rgba(0,0,0,0.12);
+  background:#fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  cursor:pointer;
+}
+.btn:hover{ background: rgba(0,0,0,0.03); }
+.btn:disabled{ opacity:0.6; cursor:not-allowed; }
+
+.btn.primary{
+  background:#111;
+  color:#fff;
+  border-color: rgba(0,0,0,0.12);
+}
+.btn.primary:hover{ background:#000; }
+
+.btn.danger{
+  border-color: rgba(176,0,32,0.22);
+  color:#b00020;
+}
+.btn.danger:hover{ background: rgba(176,0,32,0.06); }
+
+.btn.subtle{
+  padding: 8px 10px;
+  border-radius: 9px;
+}
+
+/* Empty state (detail) */
+.empty-state{
+  border: 1px dashed rgba(0,0,0,0.14);
+  border-radius: 12px;
+  padding: 14px;
+  background: rgba(0,0,0,0.02);
+}
+.empty-title{ font-size: 13px; font-weight: 700; }
+.empty-desc{ margin-top: 6px; font-size: 12px; color:#666; }
+.empty-actions{ margin-top: 12px; display:flex; gap:8px; flex-wrap: wrap; }
+
+/* Linked lecture preview */
+.link-preview{
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 12px;
   padding: 12px;
   background: rgba(0,0,0,0.02);
-}
-
-.lecture-head {
-  display: flex;
+  display:flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  gap: 10px;
 }
+.lp-title{ font-size: 12px; color:#777; }
+.lp-row{ flex: 1 1 auto; min-width: 0; }
+.lp-name{ font-size: 13px; font-weight: 700; }
+.lp-meta{ margin-top: 4px; font-size: 12px; color:#666; }
+.dot{ margin: 0 6px; color:#999; }
 
-.lecture-title { font-size: 13px; font-weight: 600; }
-.lecture-sub { font-size: 12px; color: #777; margin-top: 4px; }
-
-/* Preview */
-.preview-head {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 10px;
-}
-
-.preview-card {
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 12px;
-  padding: 14px;
-}
-
-.pv-title {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.pv-meta, .pv-date {
-  font-size: 12px;
-  color: #666;
-  margin-top: 6px;
-}
-
-.pv-row {
-  margin-top: 10px;
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.pv-lecture {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(0,0,0,0.06);
-}
-
-.pv-lecture-title {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.pv-lecture-meta, .pv-lecture-note {
-  font-size: 12px;
-  color: #666;
-  margin-top: 6px;
-}
-
-.dot { margin: 0 6px; color: #999; }
-
-@media (max-width: 980px) {
-  .grid { grid-template-columns: 1fr; }
-  .list-item.row { grid-template-columns: 64px 1fr; }
-  .thumb { width: 64px; height: 64px; }
-  .pager{ flex-direction: column; align-items:flex-start; }
-  .pager-right{ width:100%; justify-content:flex-start; }
+/* Responsive */
+@media (max-width: 980px){
+  .layout{ flex-direction: column; }
+  .right-col{ min-width: 0; }
+  .side-box{ position: static; }
+  .grid{ grid-template-columns: 1fr; }
+  .list-item.row{ grid-template-columns: 64px 1fr; }
+  .thumb{ width:64px; height:64px; }
+  .pager{ flex-direction: column; align-items: flex-start; }
+  .pager-right{ width:100%; justify-content: flex-start; }
 }
 </style>
