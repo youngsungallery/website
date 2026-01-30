@@ -1,13 +1,4 @@
-<!-- FILE: src/components/admin/AdminExhibitionsPage.vue
-  ✅ 새 구조(요청 반영)
-  - Firestore만 로드(정본 JSON 로드/merge 제거)
-  - 목록이 우선(항상 표시), 폼은 기본 숨김(선택/새로 만들기 때만 표시)
-  - 전시/특강 완전 분리
-    - 전시: lectureId로 “특강 문서”만 연결
-    - 특강: 전시와 독립
-  - 삭제: Firestore 문서 실제 삭제(deleteDoc)
-  - StorageUsageBox + bumpStorageUsedBytes/estimateDocBytes 연결 유지
--->
+<!-- FILE: src/components/admin/AdminExhibitionsPage.vue -->
 
 <template>
   <section class="admin-page">
@@ -19,7 +10,7 @@
       <div class="head-title">
         <h2 class="title">전시 / 특강 관리</h2>
         <p class="desc">
-          목록에서 선택하면 오른쪽에서 편집합니다. 전시는 특강을 “연결(lectureId)”만 합니다.
+          목록에서 선택하면 오른쪽에서 편집합니다. 전시는 특강을 “여러 개 연결(lectureIds)”할 수 있어요.
         </p>
         <p v-if="errorMsg" class="msg error">{{ errorMsg }}</p>
         <p v-if="okMsg" class="msg ok">{{ okMsg }}</p>
@@ -27,7 +18,7 @@
     </header>
 
     <section class="layout">
-      <!-- LEFT: 목록(우선) -->
+      <!-- LEFT: 목록 -->
       <main class="panel list-panel">
         <div class="panel-head">
           <div class="panel-title">목록</div>
@@ -35,7 +26,6 @@
         </div>
 
         <div class="panel-body list-wrap">
-          <!-- 탭 -->
           <div class="tabs" role="tablist" aria-label="필터">
             <button type="button" class="tab" :class="{ active: filterTab === 'exhibition' }" @click="filterTab='exhibition'">
               전시
@@ -45,17 +35,10 @@
             </button>
           </div>
 
-          <!-- 검색 -->
           <div class="search-row">
-            <input
-              v-model="q"
-              class="search"
-              type="text"
-              placeholder="제목/작가/강사/카드명/기간/일시 검색"
-            />
+            <input v-model="q" class="search" type="text" placeholder="제목/작가/강사/기간/일시 검색" />
           </div>
 
-          <!-- 페이지 -->
           <div class="pager">
             <div class="pager-left">
               <span class="pager-text">
@@ -85,7 +68,6 @@
             </div>
           </div>
 
-          <!-- 리스트 -->
           <div class="list">
             <button
               v-for="item in pagedCards"
@@ -109,15 +91,15 @@
                 </div>
                 <div class="li-badges">
                   <span class="badge">{{ item.type === 'exhibition' ? '전시' : '특강' }}</span>
-                  <span v-if="item.type === 'exhibition' && item.lectureId" class="badge">특강 연결</span>
+                  <span v-if="item.type === 'exhibition' && item.lectureCount > 0" class="badge">
+                    특강 연결 {{ item.lectureCount }}
+                  </span>
                   <span v-if="item.imageUrl" class="badge ghost">포스터</span>
                 </div>
               </div>
             </button>
 
-            <div v-if="!loading && pagedCards.length === 0" class="empty">
-              데이터가 없습니다.
-            </div>
+            <div v-if="!loading && pagedCards.length === 0" class="empty">데이터가 없습니다.</div>
             <div v-if="loading" class="empty">불러오는 중...</div>
           </div>
         </div>
@@ -138,7 +120,6 @@
           </div>
 
           <div class="panel-body">
-            <!-- 폼 숨김 상태 -->
             <div v-if="!showForm" class="empty-state">
               <div class="empty-title">폼이 닫혀 있어요</div>
               <div class="empty-desc">왼쪽 목록에서 선택하거나, 아래에서 새로 만드세요.</div>
@@ -163,11 +144,6 @@
                 </label>
 
                 <label class="field">
-                  <span class="label">카드 이름</span>
-                  <input v-model="exForm.cardName" class="input" type="text" placeholder="예) 영선갤러리 기획전" />
-                </label>
-
-                <label class="field">
                   <span class="label">전시 시작일</span>
                   <input v-model="exForm.startDate" class="input" type="date" />
                 </label>
@@ -181,48 +157,77 @@
                   <span class="label">전시 포스터 이미지 URL</span>
                   <input v-model="exForm.imageUrl" class="input" type="url" placeholder="https://..." />
                 </label>
-
-                <label class="field wide">
-                  <span class="label">연결할 특강(선택)</span>
-                  <select v-model="exForm.lectureId" class="input">
-                    <option value="">(연결 없음)</option>
-                    <option v-for="lec in lectureOptions" :key="lec.id" :value="lec.id">
-                      {{ lec.title || "(특강명 없음)" }} · {{ formatLectureText(lec) }}
-                    </option>
-                  </select>
-                  <span class="hint">전시는 특강을 “선택(lectureId)”으로만 연결합니다.</span>
-                </label>
               </div>
 
               <div class="divider"></div>
 
-              <!-- 연결된 특강 미리보기 -->
-              <div class="link-preview" v-if="linkedLecture">
-                <div class="lp-title">연결된 특강</div>
-                <div class="lp-row">
-                  <div class="lp-name">{{ linkedLecture.title || "(특강명 없음)" }}</div>
-                  <div class="lp-meta">{{ linkedLecture.instructor || "-" }} · {{ formatLectureText(linkedLecture) }}</div>
+              <!-- ✅ 특강 다중 연결 -->
+              <section class="link-box">
+                <div class="link-head">
+                  <div>
+                    <div class="link-title">연결할 특강(복수 선택 가능)</div>
+                    <div class="link-sub">드랍다운에서 체크하면 선택됩니다. (lectureIds 배열로 저장)</div>
+                  </div>
                 </div>
-                <button type="button" class="btn subtle" @click="exForm.lectureId=''" :disabled="saving">
-                  연결 해제
-                </button>
-              </div>
+
+                <div class="dd" ref="lecDdRef">
+                  <button
+                    type="button"
+                    class="dd-btn"
+                    :class="{ open: lecDdOpen }"
+                    :disabled="saving || lectureOptions.length === 0"
+                    @click="toggleLecDd"
+                  >
+                    <span class="dd-btn-text">{{ selectedLectureLabel }}</span>
+                    <span class="dd-caret">▾</span>
+                  </button>
+
+                  <div v-if="lecDdOpen" class="dd-menu" role="listbox" aria-multiselectable="true">
+                    <label v-for="lec in lectureOptions" :key="lec.id" class="dd-item">
+                      <input
+                        type="checkbox"
+                        class="dd-check"
+                        :value="lec.id"
+                        v-model="exForm.lectureIds"
+                        :disabled="saving"
+                      />
+                      <span class="dd-item-text">
+                        <b class="dd-title">{{ lec.title || "(특강명 없음)" }}</b>
+                        <span class="dd-meta">{{ lec.instructor || "-" }} · {{ formatLectureText(lec) }}</span>
+                      </span>
+                    </label>
+
+                    <div v-if="lectureOptions.length === 0" class="empty-mini">
+                      등록된 특강이 없습니다. 먼저 특강을 만들어 주세요.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 선택된 것이 보여주기 -->
+                <div v-if="linkedLectures.length" class="linked-preview">
+                  <div class="lp-title">연결됨 ({{ linkedLectures.length }})</div>
+                  <div class="lp-list">
+                    <div v-for="lec in linkedLectures" :key="lec.id" class="lp-item">
+                      <div class="lp-left">
+                        <div class="lp-name">{{ lec.title || "(특강명 없음)" }}</div>
+                        <div class="lp-meta">{{ lec.instructor || "-" }} · {{ formatLectureText(lec) }}</div>
+                      </div>
+                      <button type="button" class="btn subtle" :disabled="saving" @click="unlinkLecture(lec.id)">
+                        해제
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
               <div class="divider"></div>
 
-              <!-- 액션 -->
               <div class="actions">
                 <button type="button" class="btn" @click="closeForm" :disabled="saving">닫기</button>
                 <button type="button" class="btn primary" @click="handleSave" :disabled="!canSave || saving">
                   {{ saving ? "저장 중..." : "저장" }}
                 </button>
-                <button
-                  v-if="editingId"
-                  type="button"
-                  class="btn danger"
-                  @click="handleDelete"
-                  :disabled="saving"
-                >
+                <button v-if="editingId" type="button" class="btn danger" @click="handleDelete" :disabled="saving">
                   {{ saving ? "처리 중..." : "삭제" }}
                 </button>
               </div>
@@ -264,13 +269,7 @@
                 <button type="button" class="btn primary" @click="handleSave" :disabled="!canSave || saving">
                   {{ saving ? "저장 중..." : "저장" }}
                 </button>
-                <button
-                  v-if="editingId"
-                  type="button"
-                  class="btn danger"
-                  @click="handleDelete"
-                  :disabled="saving"
-                >
+                <button v-if="editingId" type="button" class="btn danger" @click="handleDelete" :disabled="saving">
                   {{ saving ? "처리 중..." : "삭제" }}
                 </button>
               </div>
@@ -278,7 +277,6 @@
           </div>
         </section>
 
-        <!-- Storage (기존 연결 유지) -->
         <section class="side-box">
           <StorageUsageBox
             docPath="admin/stats"
@@ -308,6 +306,7 @@ import {
   onSnapshot,
   serverTimestamp,
   Timestamp,
+  deleteField,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -335,9 +334,9 @@ function setErr(msg) {
   okMsg.value = "";
 }
 
-/** ====== Firestore 로드(전시/특강) ====== */
-const exhibitions = ref([]); // raw docs {id, ...}
-const lectures = ref([]); // raw docs {id, ...}
+/** ===== Firestore ===== */
+const exhibitions = ref([]);
+const lectures = ref([]);
 
 let unsubEx = null;
 let unsubLec = null;
@@ -373,7 +372,7 @@ onBeforeUnmount(() => {
   if (unsubLec) unsubLec();
 });
 
-/** ====== 유틸 ====== */
+/** ===== Utils ===== */
 function tsToDateInput(ts) {
   if (!ts) return "";
   const d = ts.toDate ? ts.toDate() : new Date(ts);
@@ -419,19 +418,16 @@ function formatLectureText(lec) {
   return "-";
 }
 
-/** ====== 목록/검색/페이지 ====== */
-const filterTab = ref("exhibition"); // 'exhibition' | 'lecture'
+/** ===== List / Search / Paging ===== */
+const filterTab = ref("exhibition");
 const q = ref("");
 
 const pageSize = 20;
 const page = ref(1);
 
-watch([q, filterTab], () => {
-  page.value = 1;
-});
+watch([q, filterTab], () => { page.value = 1; });
 
 const exhibitionList = computed(() => {
-  // 최신 우선(시작/끝/업뎃/생성)
   const arr = (exhibitions.value || []).slice();
   return arr
     .filter((x) => x && x.id)
@@ -439,10 +435,8 @@ const exhibitionList = computed(() => {
       const sd = x.startDate ? tsToDateInput(x.startDate) : "";
       const ed = x.endDate ? tsToDateInput(x.endDate) : "";
       const period = sd && ed ? `${sd} ~ ${ed}` : (sd || ed || "-");
-      return {
-        ...x,
-        periodText: period,
-      };
+      const lectureIds = Array.isArray(x.lectureIds) ? x.lectureIds.filter(Boolean) : [];
+      return { ...x, periodText: period, lectureIds };
     })
     .sort((a, b) => {
       const am =
@@ -482,7 +476,7 @@ const cards = computed(() => {
       sub1: ex.artistName || "-",
       sub2: ex.periodText || "-",
       imageUrl: (ex.imageUrl || "").trim(),
-      lectureId: (ex.lectureId || "").trim(),
+      lectureCount: Array.isArray(ex.lectureIds) ? ex.lectureIds.length : 0,
       _raw: ex,
     }));
 
@@ -491,8 +485,7 @@ const cards = computed(() => {
       return (
         (x.title || "").toLowerCase().includes(s) ||
         (x.sub1 || "").toLowerCase().includes(s) ||
-        (x.sub2 || "").toLowerCase().includes(s) ||
-        ((x._raw?.cardName || "") + "").toLowerCase().includes(s)
+        (x.sub2 || "").toLowerCase().includes(s)
       );
     });
   }
@@ -505,7 +498,7 @@ const cards = computed(() => {
     sub1: lec.instructor || "-",
     sub2: formatLectureText(lec),
     imageUrl: (lec.imageUrl || "").trim(),
-    lectureId: "",
+    lectureCount: 0,
     _raw: lec,
   }));
 
@@ -552,20 +545,19 @@ function goNext() { page.value = Math.min(totalPages.value, page.value + 1); }
 function goFirst() { page.value = 1; }
 function goLast() { page.value = totalPages.value; }
 
-/** ====== 폼(기본 숨김) ====== */
+/** ===== Form (hidden by default) ===== */
 const showForm = ref(false);
-const formType = ref("exhibition"); // 'exhibition' | 'lecture'
-const editingId = ref(""); // 선택된 doc id
+const formType = ref("exhibition");
+const editingId = ref("");
 const selectedKey = ref("");
 
 const exForm = reactive({
   title: "",
   artistName: "",
-  cardName: "",
   startDate: "",
   endDate: "",
   imageUrl: "",
-  lectureId: "",
+  lectureIds: [],
 });
 
 const lecForm = reactive({
@@ -579,13 +571,11 @@ const lecForm = reactive({
 function resetExForm() {
   exForm.title = "";
   exForm.artistName = "";
-  exForm.cardName = "";
   exForm.startDate = "";
   exForm.endDate = "";
   exForm.imageUrl = "";
-  exForm.lectureId = "";
+  exForm.lectureIds = [];
 }
-
 function resetLecForm() {
   lecForm.title = "";
   lecForm.instructor = "";
@@ -601,6 +591,7 @@ function closeForm() {
   selectedKey.value = "";
   resetExForm();
   resetLecForm();
+  lecDdOpen.value = false;
 }
 
 function openNew(type) {
@@ -609,9 +600,9 @@ function openNew(type) {
   formType.value = type;
   editingId.value = "";
   selectedKey.value = "";
-
   resetExForm();
   resetLecForm();
+  lecDdOpen.value = false;
 }
 
 function selectCard(item) {
@@ -620,6 +611,7 @@ function selectCard(item) {
   showForm.value = true;
   formType.value = item.type;
   editingId.value = item.id;
+  lecDdOpen.value = false;
 
   if (item.type === "exhibition") {
     const ex = exhibitionList.value.find((x) => x.id === item.id);
@@ -627,11 +619,10 @@ function selectCard(item) {
 
     exForm.title = ex.title || "";
     exForm.artistName = ex.artistName || "";
-    exForm.cardName = ex.cardName || "";
     exForm.imageUrl = ex.imageUrl || "";
     exForm.startDate = ex.startDate ? tsToDateInput(ex.startDate) : "";
     exForm.endDate = ex.endDate ? tsToDateInput(ex.endDate) : "";
-    exForm.lectureId = (ex.lectureId || "").trim();
+    exForm.lectureIds = Array.isArray(ex.lectureIds) ? ex.lectureIds.filter(Boolean) : [];
 
     resetLecForm();
     return;
@@ -649,45 +640,71 @@ function selectCard(item) {
   resetExForm();
 }
 
-/** 전시 폼에서 “연결할 특강 목록” */
+/** 전시에서 연결할 특강 옵션 */
 const lectureOptions = computed(() => lectureList.value);
 
-const linkedLecture = computed(() => {
-  const id = (exForm.lectureId || "").trim();
-  if (!id) return null;
-  return lectureList.value.find((x) => x.id === id) || null;
+const linkedLectures = computed(() => {
+  const ids = new Set((exForm.lectureIds || []).filter(Boolean));
+  const map = new Map(lectureList.value.map((l) => [l.id, l]));
+  const out = [];
+  ids.forEach((id) => {
+    const lec = map.get(id);
+    if (lec) out.push(lec);
+  });
+  return out.sort((a, b) => (toMillisMaybe(b.dateTime) || 0) - (toMillisMaybe(a.dateTime) || 0));
 });
 
-/** ====== 저장 가능 여부 ====== */
+function unlinkLecture(id) {
+  exForm.lectureIds = (exForm.lectureIds || []).filter((x) => x !== id);
+}
+
+/** ✅ dropdown open/close */
+const lecDdOpen = ref(false);
+const lecDdRef = ref(null);
+
+function toggleLecDd() {
+  lecDdOpen.value = !lecDdOpen.value;
+}
+function onDocPointerDown(e) {
+  if (!lecDdOpen.value) return;
+  const el = lecDdRef.value;
+  if (!el) return;
+  if (el === e.target || el.contains(e.target)) return;
+  lecDdOpen.value = false;
+}
+
+onMounted(() => {
+  document.addEventListener("pointerdown", onDocPointerDown, true);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener("pointerdown", onDocPointerDown, true);
+});
+
+/** 드랍다운 버튼 라벨 */
+const selectedLectureLabel = computed(() => {
+  const n = (exForm.lectureIds || []).filter(Boolean).length;
+  if (lectureOptions.value.length === 0) return "등록된 특강 없음";
+  if (n <= 0) return "특강 선택";
+  return `특강 ${n}개 선택됨`;
+});
+
+/** Save enable */
 const canSave = computed(() => {
   if (saving.value) return false;
-
-  if (formType.value === "exhibition") {
-    return (exForm.title || "").trim().length > 0;
-  }
-
-  const tOk = (lecForm.title || "").trim().length > 0;
-  const dOk = !!lecForm.date;
-  return tOk && dOk;
+  if (formType.value === "exhibition") return (exForm.title || "").trim().length > 0;
+  return (lecForm.title || "").trim().length > 0 && !!lecForm.date;
 });
 
-/** ====== Storage bytes(추정) 계산용: serverTimestamp 제거 ====== */
+/** bytes estimate */
 function safeEstimate(obj) {
-  // serverTimestamp(FieldValue)는 stringify 불가라서 제거/치환
-  // Timestamp는 stringify 가능하므로 그대로 둬도 OK
-  try {
-    return estimateDocBytes(obj);
-  } catch {
-    // 최후 안전망
-    try {
-      return estimateDocBytes(JSON.parse(JSON.stringify(obj ?? {})));
-    } catch {
-      return 0;
-    }
+  try { return estimateDocBytes(obj); }
+  catch {
+    try { return estimateDocBytes(JSON.parse(JSON.stringify(obj ?? {}))); }
+    catch { return 0; }
   }
 }
 
-/** ====== 저장 ====== */
+/** Save */
 async function handleSave() {
   clearMsgs();
 
@@ -702,25 +719,28 @@ async function handleSave() {
     if (formType.value === "exhibition") {
       const exId = editingId.value;
 
+      const lectureIdsClean = Array.from(
+        new Set((exForm.lectureIds || []).map((x) => String(x).trim()).filter(Boolean))
+      );
+
       const payload = {
         title: (exForm.title || "").trim(),
         artistName: (exForm.artistName || "").trim(),
-        cardName: (exForm.cardName || "").trim(),
         imageUrl: (exForm.imageUrl || "").trim(),
         startDate: dateToTimestamp(exForm.startDate),
         endDate: dateToTimestamp(exForm.endDate),
-        lectureId: (exForm.lectureId || "").trim(),
+        lectureIds: lectureIdsClean,
         updatedAt: serverTimestamp(),
+        cardName: deleteField(),
       };
 
-      // bytes: serverTimestamp 제외 버전으로 계산
       const payloadForBytes = {
         ...payload,
         updatedAt: null,
+        cardName: null,
       };
 
-      const prev =
-        exId ? exhibitionList.value.find((x) => x.id === exId) : null;
+      const prev = exId ? exhibitionList.value.find((x) => x.id === exId) : null;
       const prevBytes = safeEstimate(prev);
       const nextBytes = safeEstimate(payloadForBytes);
 
@@ -740,13 +760,11 @@ async function handleSave() {
         await bumpStorageUsedBytes(nextBytes - prevBytes);
         setOk("저장되었습니다. (전시 수정)");
       }
-
       return;
     }
 
-    // ===== 특강 저장 =====
+    // Lecture
     const lecId = editingId.value;
-
     const dt = lectureDateTimeToTimestamp(lecForm.date, lecForm.time);
 
     const payload = {
@@ -759,8 +777,7 @@ async function handleSave() {
 
     const payloadForBytes = { ...payload, updatedAt: null };
 
-    const prev =
-      lecId ? lectureList.value.find((x) => x.id === lecId) : null;
+    const prev = lecId ? lectureList.value.find((x) => x.id === lecId) : null;
     const prevBytes = safeEstimate(prev);
     const nextBytes = safeEstimate(payloadForBytes);
 
@@ -787,7 +804,7 @@ async function handleSave() {
   }
 }
 
-/** ====== 삭제(실제 Firestore 문서 삭제) ====== */
+/** Delete (real deleteDoc) */
 async function handleDelete() {
   clearMsgs();
   if (!editingId.value) return;
@@ -829,313 +846,169 @@ async function handleDelete() {
 </script>
 
 <style scoped>
-.admin-page {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
+.admin-page { display:flex; flex-direction:column; gap:18px; }
 
-/* Header */
-.page-head {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.page-head{ display:flex; flex-direction:column; gap:12px; }
+.head-top{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.home-link{ font-size:12px; color:#777; text-decoration:none; }
+.home-link:hover{ color:#111; }
 
-.head-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
+.title{ font-size:18px; font-weight:600; margin:0; }
+.desc{ font-size:13px; color:#666; margin:6px 0 0; }
+.msg{ margin:10px 0 0; font-size:12px; }
+.msg.ok{ color:#0b6b2f; }
+.msg.error{ color:#b00020; }
 
-.home-link {
-  font-size: 12px;
-  color: #777;
-  text-decoration: none;
-}
-.home-link:hover { color: #111; }
+.panel{ border:1px solid rgba(0,0,0,0.08); border-radius:12px; background:#fff; overflow:hidden; }
+.panel-head{ padding:14px 14px 10px; border-bottom:1px solid rgba(0,0,0,0.06); }
+.panel-title{ font-size:13px; font-weight:600; color:#111; }
+.panel-sub{ margin-top:4px; font-size:12px; color:#777; }
+.panel-body{ padding:14px; overflow:visible; }
 
-.title {
-  font-size: 18px;
-  font-weight: 600;
-  margin: 0;
-}
-.desc {
-  font-size: 13px;
-  color: #666;
-  margin: 6px 0 0;
-}
-.msg { margin: 10px 0 0; font-size: 12px; }
-.msg.ok { color: #0b6b2f; }
-.msg.error { color: #b00020; }
+.layout{ display:flex; gap:16px; align-items:flex-start; overflow:visible; }
+.list-panel{ flex:1 1 58%; min-width:0; }
+.right-col{ flex:1 1 42%; min-width:320px; display:flex; flex-direction:column; gap:14px; overflow:visible; }
+.detail-panel{ overflow:visible; }
+.side-box{ position:sticky; top:12px; }
 
-/* Panels */
-.panel {
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 12px;
-  background: #fff;
-  overflow: hidden;
-}
+.list-wrap{ overflow:auto; -ms-overflow-style:none; scrollbar-width:none; }
+.list-wrap::-webkit-scrollbar{ display:none; }
 
-.panel-head {
-  padding: 14px 14px 10px;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-}
-.panel-title { font-size: 13px; font-weight: 600; color: #111; }
-.panel-sub { margin-top: 4px; font-size: 12px; color: #777; }
-.panel-body { padding: 14px; }
+.tabs{ display:flex; gap:8px; margin-bottom:10px; }
+.tab{ border:1px solid rgba(0,0,0,0.10); background:#fff; border-radius:999px; padding:8px 10px; font-size:12px; cursor:pointer; }
+.tab:hover{ background:rgba(0,0,0,0.03); }
+.tab.active{ background:#111; color:#fff; border-color:rgba(0,0,0,0.12); }
 
-/* Layout */
-.layout{
-  display:flex;
-  gap: 16px;
-  align-items: flex-start;
-}
+.search-row{ margin-bottom:12px; }
+.search{ width:100%; box-sizing:border-box; border:1px solid rgba(0,0,0,0.12); border-radius:10px; padding:10px 12px; font-size:12px; outline:none; }
+.search:focus{ border-color:rgba(0,0,0,0.22); }
 
-.list-panel{
-  flex: 1 1 58%;
-  min-width: 0;
-}
-
-.right-col{
-  flex: 1 1 42%;
-  min-width: 320px;
-  display:flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.side-box{
-  position: sticky;
-  top: 12px;
-}
-
-/* List wrap */
-.list-wrap {
-  overflow: auto;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.list-wrap::-webkit-scrollbar { display:none; }
-
-/* Tabs */
-.tabs { display:flex; gap:8px; margin-bottom: 10px; }
-.tab{
-  border: 1px solid rgba(0,0,0,0.10);
-  background:#fff;
-  border-radius: 999px;
-  padding: 8px 10px;
-  font-size: 12px;
-  cursor:pointer;
-}
-.tab:hover{ background: rgba(0,0,0,0.03); }
-.tab.active{
-  background:#111;
-  color:#fff;
-  border-color: rgba(0,0,0,0.12);
-}
-
-/* Search */
-.search-row{ margin-bottom: 12px; }
-.search{
-  width:100%;
-  box-sizing: border-box;
-  border:1px solid rgba(0,0,0,0.12);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 12px;
-  outline:none;
-}
-.search:focus{ border-color: rgba(0,0,0,0.22); }
-
-/* Pager */
-.pager{
-  display:flex;
-  align-items:center;
-  justify-content: space-between;
-  gap:10px;
-  margin: 0 0 12px;
-  padding: 10px 10px;
-  border:1px solid rgba(0,0,0,0.06);
-  border-radius: 12px;
-  background: rgba(0,0,0,0.02);
-}
-.pager-text{ font-size: 12px; color:#666; }
-.pager-right{ display:flex; gap:6px; flex-wrap: wrap; justify-content: flex-end; }
-.pbtn{
-  border:1px solid rgba(0,0,0,0.12);
-  background:#fff;
-  border-radius: 10px;
-  padding: 8px 10px;
-  font-size: 12px;
-  cursor:pointer;
-}
-.pbtn:hover{ background: rgba(0,0,0,0.03); }
+.pager{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 12px; padding:10px 10px; border:1px solid rgba(0,0,0,0.06); border-radius:12px; background:rgba(0,0,0,0.02); }
+.pager-text{ font-size:12px; color:#666; }
+.pager-right{ display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+.pbtn{ border:1px solid rgba(0,0,0,0.12); background:#fff; border-radius:10px; padding:8px 10px; font-size:12px; cursor:pointer; }
+.pbtn:hover{ background:rgba(0,0,0,0.03); }
 .pbtn:disabled{ opacity:0.55; cursor:not-allowed; }
-.pbtn.num{ min-width: 40px; text-align:center; }
-.pbtn.active{ background:#111; color:#fff; border-color: rgba(0,0,0,0.12); }
+.pbtn.num{ min-width:40px; text-align:center; }
+.pbtn.active{ background:#111; color:#fff; border-color:rgba(0,0,0,0.12); }
 
-/* List items */
 .list{ display:grid; gap:10px; }
-.list-item{
-  width:100%;
-  text-align:left;
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 12px;
-  background:#fff;
-  padding: 12px;
-  cursor:pointer;
-}
-.list-item:hover{ background: rgba(0,0,0,0.02); }
-.list-item.active{ border-color: rgba(0,0,0,0.18); background: rgba(0,0,0,0.03); }
+.list-item{ width:100%; text-align:left; border:1px solid rgba(0,0,0,0.08); border-radius:12px; background:#fff; padding:12px; cursor:pointer; }
+.list-item:hover{ background:rgba(0,0,0,0.02); }
+.list-item.active{ border-color:rgba(0,0,0,0.18); background:rgba(0,0,0,0.03); }
+.list-item.row{ display:grid; grid-template-columns:76px 1fr; gap:12px; align-items:center; }
 
-.list-item.row{
-  display:grid;
-  grid-template-columns: 76px 1fr;
-  gap: 12px;
-  align-items: center;
-}
-
-.thumb{
-  width:76px;
-  height:76px;
-  border-radius: 12px;
-  overflow:hidden;
-  border:1px solid rgba(0,0,0,0.08);
-  background: rgba(0,0,0,0.03);
-}
-.thumb img{
-  width:100%;
-  height:100%;
-  object-fit: cover;
-  display:block;
-}
-.thumb-ph{
-  width:100%;
-  height:100%;
-  background: linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02));
-}
+.thumb{ width:76px; height:76px; border-radius:12px; overflow:hidden; border:1px solid rgba(0,0,0,0.08); background:rgba(0,0,0,0.03); }
+.thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.thumb-ph{ width:100%; height:100%; background:linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.02)); }
 
 .li-main{ min-width:0; }
-.li-title{ font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-.li-meta{ font-size: 12px; color:#666; }
-.li-badges{
-  margin-top: 8px;
-  display:flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.empty{ padding: 14px 6px 6px; font-size: 12px; color:#777; }
+.li-title{ font-size:13px; font-weight:600; margin-bottom:6px; }
+.li-meta{ font-size:12px; color:#666; }
+.li-badges{ margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
 
-.badge{
-  display:inline-flex;
+.badge{ display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:999px; border:1px solid rgba(0,0,0,0.10); font-size:11px; color:#333; background:rgba(0,0,0,0.03); }
+.badge.ghost{ background:transparent; color:#777; }
+.empty{ padding:14px 6px 6px; font-size:12px; color:#777; }
+.dot{ margin:0 6px; color:#999; }
+
+.grid{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; }
+.field{ display:flex; flex-direction:column; gap:6px; }
+.field.wide{ grid-column:1 / -1; }
+.label{ font-size:12px; color:#666; }
+.input{ border:1px solid rgba(0,0,0,0.12); border-radius:10px; padding:10px 12px; font-size:12px; outline:none; background:#fff; }
+.input:focus{ border-color:rgba(0,0,0,0.22); }
+.divider{ height:1px; background:rgba(0,0,0,0.06); margin:14px 0; }
+
+.actions{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
+.btn{ border:1px solid rgba(0,0,0,0.12); background:#fff; border-radius:10px; padding:10px 12px; font-size:12px; cursor:pointer; }
+.btn:hover{ background:rgba(0,0,0,0.03); }
+.btn:disabled{ opacity:0.6; cursor:not-allowed; }
+.btn.primary{ background:#111; color:#fff; border-color:rgba(0,0,0,0.12); }
+.btn.primary:hover{ background:#000; }
+.btn.danger{ border-color:rgba(176,0,32,0.22); color:#b00020; }
+.btn.danger:hover{ background:rgba(176,0,32,0.06); }
+.btn.subtle{ padding:8px 10px; border-radius:9px; }
+
+.empty-state{ border:1px dashed rgba(0,0,0,0.14); border-radius:12px; padding:14px; background:rgba(0,0,0,0.02); }
+.empty-title{ font-size:13px; font-weight:700; }
+.empty-desc{ margin-top:6px; font-size:12px; color:#666; }
+.empty-actions{ margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; }
+
+.link-box{ border:1px solid rgba(0,0,0,0.08); border-radius:12px; padding:12px; background: rgba(0,0,0,0.02); position:relative; z-index:1; }
+.link-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.link-title{ font-size:13px; font-weight:700; }
+.link-sub{ margin-top:4px; font-size:12px; color:#777; } /* ✅ 스타일 복구 */
+
+.dd{ position:relative; z-index:999999; }
+.dd-btn{
+  width:100%;
+  display:flex;
   align-items:center;
-  height:22px;
-  padding: 0 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(0,0,0,0.10);
-  font-size: 11px;
-  color:#333;
-  background: rgba(0,0,0,0.03);
-}
-.badge.ghost{ background: transparent; color:#777; }
-
-/* Form */
-.grid{
-  display:grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.field{ display:flex; flex-direction: column; gap:6px; }
-.field.wide{ grid-column: 1 / -1; }
-.label{ font-size: 12px; color:#666; }
-.input{
-  border:1px solid rgba(0,0,0,0.12);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 12px;
-  outline:none;
-  background:#fff;
-}
-.input:focus{ border-color: rgba(0,0,0,0.22); }
-.hint{ font-size: 11px; color:#888; }
-.divider{ height:1px; background: rgba(0,0,0,0.06); margin: 14px 0; }
-
-.actions{
-  display:flex;
-  gap: 8px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-}
-
-/* Buttons */
-.btn{
+  justify-content:space-between;
+  gap:10px;
   border:1px solid rgba(0,0,0,0.12);
   background:#fff;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 12px;
+  border-radius:12px;
+  padding:10px 12px;
+  font-size:12px;
   cursor:pointer;
 }
-.btn:hover{ background: rgba(0,0,0,0.03); }
-.btn:disabled{ opacity:0.6; cursor:not-allowed; }
+.dd-btn:hover{ background:rgba(0,0,0,0.02); }
+.dd-btn:disabled{ opacity:0.6; cursor:not-allowed; }
+.dd-btn.open{ border-color:rgba(0,0,0,0.22); }
+.dd-btn-text{ color:#111; }
+.dd-caret{ color:#777; }
 
-.btn.primary{
-  background:#111;
-  color:#fff;
-  border-color: rgba(0,0,0,0.12);
+.dd-menu{
+  position:absolute;
+  left:0; right:0;
+  top:calc(100% + 8px);
+  z-index:9999999;
+  border:1px solid rgba(0,0,0,0.10);
+  border-radius:12px;
+  background:#fff;
+  overflow:auto;
+  box-shadow:0 18px 40px rgba(0,0,0,0.12);
+  max-height:520px;
+  min-height:180px;
 }
-.btn.primary:hover{ background:#000; }
 
-.btn.danger{
-  border-color: rgba(176,0,32,0.22);
-  color:#b00020;
-}
-.btn.danger:hover{ background: rgba(176,0,32,0.06); }
-
-.btn.subtle{
-  padding: 8px 10px;
-  border-radius: 9px;
-}
-
-/* Empty state (detail) */
-.empty-state{
-  border: 1px dashed rgba(0,0,0,0.14);
-  border-radius: 12px;
-  padding: 14px;
-  background: rgba(0,0,0,0.02);
-}
-.empty-title{ font-size: 13px; font-weight: 700; }
-.empty-desc{ margin-top: 6px; font-size: 12px; color:#666; }
-.empty-actions{ margin-top: 12px; display:flex; gap:8px; flex-wrap: wrap; }
-
-/* Linked lecture preview */
-.link-preview{
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 12px;
-  padding: 12px;
-  background: rgba(0,0,0,0.02);
+.dd-item{
   display:flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap:10px;
+  align-items:flex-start;
+  padding:10px 12px;
+  cursor:pointer;
 }
-.lp-title{ font-size: 12px; color:#777; }
-.lp-row{ flex: 1 1 auto; min-width: 0; }
-.lp-name{ font-size: 13px; font-weight: 700; }
-.lp-meta{ margin-top: 4px; font-size: 12px; color:#666; }
-.dot{ margin: 0 6px; color:#999; }
+.dd-item:hover{ background:rgba(0,0,0,0.02); }
+.dd-check{ margin-top:2px; }
+.dd-item-text{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+.dd-title{ font-size:12px; }
+.dd-meta{ font-size:12px; color:#666; }
 
-/* Responsive */
+.empty-mini{ padding:10px 12px; font-size:12px; color:#777; }
+
+.linked-preview{ margin-top:12px; border-top:1px solid rgba(0,0,0,0.06); padding-top:12px; }
+.lp-title{ font-size:12px; color:#777; margin-bottom:8px; }
+.lp-list{ display:grid; gap:8px; }
+.lp-item{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:10px; border:1px solid rgba(0,0,0,0.06); border-radius:12px; background:#fff;
+}
+.lp-left{ min-width:0; }
+.lp-name{ font-size:12px; font-weight:700; }
+.lp-meta{ margin-top:4px; font-size:12px; color:#666; }
+
 @media (max-width: 980px){
-  .layout{ flex-direction: column; }
-  .right-col{ min-width: 0; }
-  .side-box{ position: static; }
-  .grid{ grid-template-columns: 1fr; }
-  .list-item.row{ grid-template-columns: 64px 1fr; }
+  .layout{ flex-direction:column; }
+  .right-col{ min-width:0; }
+  .side-box{ position:static; }
+  .grid{ grid-template-columns:1fr; }
+  .list-item.row{ grid-template-columns:64px 1fr; }
   .thumb{ width:64px; height:64px; }
-  .pager{ flex-direction: column; align-items: flex-start; }
-  .pager-right{ width:100%; justify-content: flex-start; }
+  .pager{ flex-direction:column; align-items:flex-start; }
+  .pager-right{ width:100%; justify-content:flex-start; }
+  .dd-menu{ max-height:420px; }
 }
 </style>

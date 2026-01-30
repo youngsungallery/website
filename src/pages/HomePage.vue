@@ -1,8 +1,9 @@
-<!-- src/pages/HomePage.vue -->
+<!-- FILE: src/pages/HomePage.vue -->
 <template>
   <section class="home">
     <section class="hero">
       <div class="hero-inner">
+        <!-- 전시 메인 포스터 -->
         <div class="hero-poster">
           <img
             v-if="heroExhibition?.imageUrl"
@@ -16,12 +17,41 @@
           <div v-else class="poster-placeholder">MAIN EXHIBITION POSTER</div>
         </div>
 
+        <!-- 메타 카드 -->
         <div class="hero-meta">
-          <h2 class="title">{{ heroExhibition?.title || "현재 전시 제목" }}</h2>
-          <p class="period">{{ heroPeriod || "—" }}</p>
-          <p class="desc">
-            {{ heroExhibition?.cardName || heroExhibition?.artistName || "전시 간단 설명 또는 큐레이션 문구" }}
-          </p>
+          <div class="meta-card">
+            <h2 class="ex-title">
+              {{ heroExhibition?.title || "현재 전시 제목" }}
+            </h2>
+
+            <!-- 전시는 날짜만 -->
+            <p class="ex-period">
+              {{ heroPeriod || "—" }}
+            </p>
+
+            <!-- 특강 -->
+            <div v-if="sortedLectures.length" class="lecture-card">
+              <div class="lecture-head">
+                <span class="lecture-kicker">관련 특강</span>
+              </div>
+
+              <ul class="lecture-list">
+                <li v-for="l in sortedLectures" :key="l.id" class="lecture-item">
+                  <div class="lecture-main">
+                    <div class="lec-title">
+                      {{ l.title || l.name || "특강" }}
+                    </div>
+
+                    <div class="lec-period">
+                      {{ lectureDateTimeText(l) || "—" }}
+                    </div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <div v-if="error" class="error">{{ error }}</div>
+          </div>
         </div>
       </div>
     </section>
@@ -30,11 +60,19 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import { collection, doc, getDoc, getDocs, limit, orderBy, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-const exhibitionsJson = ref(null);
+const exhibitions = ref([]);
+const lectures = ref([]);
+const error = ref("");
 
-function toTime(iso) {
-  const t = Date.parse(iso);
+function toTime(v) {
+  if (!v) return null;
+  if (typeof v === "object" && typeof v.toDate === "function") return v.toDate().getTime();
+  if (v instanceof Date) return v.getTime();
+  if (typeof v === "number") return v;
+  const t = Date.parse(v);
   return Number.isFinite(t) ? t : null;
 }
 
@@ -42,118 +80,176 @@ function pad2(n) {
   return String(n).padStart(2, "0");
 }
 
-function formatKstYmd(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  // KST 고정 (UTC+9)로 YYYY.MM.DD
-  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
-  return `${kst.getUTCFullYear()}.${pad2(kst.getUTCMonth() + 1)}.${pad2(kst.getUTCDate())}`;
+/* 전시: 날짜만 */
+function formatKstYmd(v) {
+  const t = toTime(v);
+  if (t === null) return "";
+  const d = new Date(t + 9 * 60 * 60 * 1000);
+  return `${d.getUTCFullYear()}.${pad2(d.getUTCMonth() + 1)}.${pad2(d.getUTCDate())}`;
 }
 
-/**
- * ✅ "전시 시작 날짜(startDate) 기준 최신"
- * - deleted 제외
- * - startDate 없는 항목 제외
- * - startDate가 가장 최근(가장 큰 시간값)인 전시를 hero로 선택
- * - 동률이면(updatedAt/createdAt) 최신을 보조 기준으로 정렬
- * - 포스터(imageUrl) 있는 전시를 우선 선택 (최신 그룹 안에서)
- */
+/* 특강: 날짜 + 시간 */
+function formatKstYmdHm(v) {
+  const t = toTime(v);
+  if (t === null) return "";
+  const d = new Date(t + 9 * 60 * 60 * 1000);
+  return `${d.getUTCFullYear()}.${pad2(d.getUTCMonth() + 1)}.${pad2(d.getUTCDate())} ${pad2(
+    d.getUTCHours()
+  )}:${pad2(d.getUTCMinutes())}`;
+}
+
+function lectureDateTimeText(l) {
+  return formatKstYmdHm(l?.dateTime);
+}
+
 function pickHero(list) {
   const clean = (list ?? [])
     .filter((x) => x && x.deleted !== true)
-    .map((x) => {
-      const s = toTime(x.startDate);
-      const u = toTime(x.updatedAt || x.createdAt);
-      return { ...x, _s: s, _u: u ?? -Infinity };
-    })
-    .filter((x) => x._s !== null);
-
-  // startDate 최신 → (보조) updatedAt 최신
-  clean.sort((a, b) => {
-    const ds = (b._s ?? -Infinity) - (a._s ?? -Infinity);
-    if (ds !== 0) return ds;
-    return (b._u ?? -Infinity) - (a._u ?? -Infinity);
-  });
+    .map((x) => ({
+      ...x,
+      _s: toTime(x.startDate),
+      _u: toTime(x.updatedAt || x.createdAt) ?? -Infinity,
+    }))
+    .filter((x) => x._s !== null)
+    .sort((a, b) => (b._s !== a._s ? b._s - a._s : b._u - a._u));
 
   if (!clean.length) return null;
+  const top = clean[0]._s;
+  const group = clean.filter((x) => x._s === top);
+  return group.find((x) => x.imageUrl?.trim()) || group[0];
+}
 
-  // ✅ "가장 최신 startDate" 그룹 안에서 포스터 있는 걸 우선
-  const topStart = clean[0]._s;
-  const topGroup = clean.filter((x) => x._s === topStart);
+async function loadLatestExhibitions() {
+  const q = query(collection(db, "exhibitions"), orderBy("startDate", "desc"), limit(20));
+  const snap = await getDocs(q);
+  exhibitions.value = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
 
-  const withPoster = topGroup.find((x) => x.imageUrl && String(x.imageUrl).trim() !== "");
-  return withPoster || topGroup[0];
+async function loadLecturesByIds(ids) {
+  if (!Array.isArray(ids) || !ids.length) return [];
+  const res = await Promise.all(
+    ids.map(async (id) => {
+      const s = await getDoc(doc(db, "lectures", id));
+      return s.exists() ? { id: s.id, ...s.data() } : null;
+    })
+  );
+  return res.filter(Boolean);
 }
 
 onMounted(async () => {
-  const res = await fetch("/data/exhibitions.json", { cache: "no-store" });
-  if (!res.ok) throw new Error(`Failed to load exhibitions.json: ${res.status}`);
-  exhibitionsJson.value = await res.json();
+  try {
+    await loadLatestExhibitions();
+    const hero = pickHero(exhibitions.value);
+    lectures.value = hero?.lectureIds?.length ? await loadLecturesByIds(hero.lectureIds) : [];
+  } catch (e) {
+    error.value = String(e);
+  }
 });
 
-const heroExhibition = computed(() => {
-  const list = exhibitionsJson.value?.data?.exhibitions ?? [];
-  return pickHero(list);
-});
+const heroExhibition = computed(() => pickHero(exhibitions.value));
 
 const heroPeriod = computed(() => {
   const ex = heroExhibition.value;
   if (!ex) return "";
   const s = formatKstYmd(ex.startDate);
   const e = ex.endDate ? formatKstYmd(ex.endDate) : "상설";
-  return `${s} – ${e}`;
+  return s ? `${s} – ${e}` : "";
+});
+
+const sortedLectures = computed(() => {
+  return (lectures.value ?? [])
+    .map((x) => ({
+      ...x,
+      _t: toTime(x.dateTime) ?? -Infinity,
+      _u: toTime(x.updatedAt || x.createdAt) ?? -Infinity,
+    }))
+    .sort((a, b) => (b._t !== a._t ? b._t - a._t : b._u - a._u))
+    .slice(0, 2);
 });
 </script>
 
 <style scoped>
-.home {
-  display: flex;
-  flex-direction: column;
-  gap: 80px;
-}
-
 .hero-inner {
   display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 40px;
-  align-items: center;
+  grid-template-columns: 260px 1fr;
+  gap: 28px;
+}
+
+.hero-poster {
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 .poster-img {
   width: 100%;
   aspect-ratio: 3 / 4;
-  display: block;
   object-fit: cover;
-  background: #f2f2f2;
 }
 
-.poster-placeholder {
-  width: 100%;
-  aspect-ratio: 3 / 4;
-  background: #f2f2f2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
-  font-size: 13px;
-  letter-spacing: 0.1em;
+.meta-card {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
 }
 
-.hero-meta .title {
+.ex-title {
   font-size: 22px;
-  font-weight: 600;
-  margin-bottom: 12px;
+  font-weight: 800;
 }
 
-.hero-meta .period {
+.ex-period {
   font-size: 13px;
-  color: #666;
-  margin-bottom: 16px;
+  color: #555;
 }
 
-.hero-meta .desc {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #333;
+/* 특강 */
+.lecture-card {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.lecture-head {
+  margin-bottom: 10px;
+}
+
+.lecture-kicker {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* ✅ 여기서 기본 블릿(•) 제거 */
+.lecture-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lecture-item {
+  list-style: none;
+  padding: 12px;
+  border-radius: 14px;
+  background: #fafafa;
+}
+
+.lecture-item + .lecture-item {
+  margin-top: 12px;
+}
+
+.lec-title {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.lec-period {
+  font-size: 13px;
+  color: #555;
+  margin-top: 4px;
+}
+
+.error {
+  font-size: 12px;
+  color: #b00020;
 }
 </style>
