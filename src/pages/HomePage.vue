@@ -171,19 +171,21 @@ const sortedLectures = computed(() => {
 <style scoped>
 .hero-inner {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 500px 1fr; /* ✅ 포스터 폭 고정 */
   gap: 28px;
 }
 
 .hero-poster {
+  width: 500px; /* ✅ 포스터 폭 고정 */
   border-radius: 16px;
   overflow: hidden;
 }
 
 .poster-img {
   width: 100%;
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
+  height: auto; /* ✅ 세로는 이미지 비율대로 자동 */
+  display: block;
+  object-fit: contain; /* ✅ 잘림 방지(높이 지정 없지만 안전장치) */
 }
 
 .meta-card {
