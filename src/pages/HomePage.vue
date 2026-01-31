@@ -171,12 +171,12 @@ const sortedLectures = computed(() => {
 <style scoped>
 .hero-inner {
   display: grid;
-  grid-template-columns: 500px 1fr; /* ✅ 포스터 폭 고정 */
+  grid-template-columns: 200px 1fr; /* ✅ 포스터 폭 고정 */
   gap: 28px;
 }
 
 .hero-poster {
-  width: 500px; /* ✅ 포스터 폭 고정 */
+  width: 200px; /* ✅ 포스터 폭 고정 */
   border-radius: 16px;
   overflow: hidden;
 }
