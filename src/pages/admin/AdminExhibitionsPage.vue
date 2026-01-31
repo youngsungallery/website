@@ -306,7 +306,6 @@ import {
   onSnapshot,
   serverTimestamp,
   Timestamp,
-  deleteField,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -731,13 +730,11 @@ async function handleSave() {
         endDate: dateToTimestamp(exForm.endDate),
         lectureIds: lectureIdsClean,
         updatedAt: serverTimestamp(),
-        cardName: deleteField(),
       };
 
       const payloadForBytes = {
         ...payload,
         updatedAt: null,
-        cardName: null,
       };
 
       const prev = exId ? exhibitionList.value.find((x) => x.id === exId) : null;
