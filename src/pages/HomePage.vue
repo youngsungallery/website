@@ -29,7 +29,7 @@
               {{ heroPeriod || "—" }}
             </p>
 
-            <!-- ✅ 현 진행전시 타이머: 전시 마감 기준 -->
+            <!-- ✅ 현 진행전시 타이머: 전시 마감 기준 (KST 날짜 경계) -->
             <div v-if="currentTimer.active" class="timer-pill">
               <span class="timer-label">전시 마감까지</span>
               <span class="timer-time">{{ currentTimer.text }}</span>
@@ -64,46 +64,54 @@
 
             <div v-if="error" class="error">{{ error }}</div>
 
-            <!-- ✅ 예정 전시 그룹 (포스터 없음 / 문구만) -->
-            <div v-if="upcomingExhibitions.length" class="upcoming-card">
-              <div class="upcoming-head">
-                <span class="upcoming-kicker">예정 전시</span>
-              </div>
+            <!-- ✅ 구분선 + 예정 전시 헤더는 항상 표시 -->
+            <div class="section-divider"></div>
 
-              <ul class="upcoming-list">
-                <li v-for="ex in upcomingExhibitions" :key="ex.id" class="upcoming-item">
-                  <div class="upcoming-main">
-                    <div class="upcoming-title">{{ ex.title || "(제목 없음)" }}</div>
-                    <div class="upcoming-period">{{ upcomingPeriodText(ex) || "—" }}</div>
-
-                    <!-- ✅ 예정 전시 타이머
-                         - 예정 전시에 특강이 있으면: 가장 빠른 특강 시간 기준
-                         - 없으면: 전시 시작 기준 -->
-                    <div v-if="upcomingTimerByExId[ex.id]?.active" class="timer-mini">
-                      <span class="timer-label">{{ upcomingTimerByExId[ex.id].label }}</span>
-                      <span class="timer-time">{{ upcomingTimerByExId[ex.id].text }}</span>
-                    </div>
-
-                    <!-- ✅ 예정 전시의 특강(문구만) -->
-                    <div v-if="upcomingLecturesByExId[ex.id]?.length" class="upcoming-lectures">
-                      <div class="ul-kicker">관련 특강</div>
-                      <ul class="ul-list">
-                        <li
-                          v-for="l in upcomingLecturesByExId[ex.id]"
-                          :key="l.id"
-                          class="ul-item"
-                        >
-                          <span class="ul-title">{{ l.title || l.name || "특강" }}</span>
-                          <span class="ul-dot">·</span>
-                          <span class="ul-dt">{{ lectureDateTimeText(l) || "—" }}</span>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </li>
-              </ul>
+            <div class="upcoming-head">
+              <span class="upcoming-kicker">예정 전시</span>
+              <span class="upcoming-sub">(KST 기준)</span>
             </div>
-            <!-- /예정 전시 -->
+
+            <!-- ✅ 예정 전시 목록 (포스터 없음 / 문구만) -->
+            <ul v-if="upcomingExhibitions.length" class="upcoming-list">
+              <li v-for="ex in upcomingExhibitions" :key="ex.id" class="upcoming-item">
+                <div class="upcoming-main">
+                  <div class="upcoming-title">{{ ex.title || "(제목 없음)" }}</div>
+                  <div class="upcoming-period">{{ upcomingPeriodText(ex) || "—" }}</div>
+
+                  <!-- ✅ 예정 전시 타이머: 전시 시작 기준 (KST 날짜 경계) -->
+                  <div v-if="upcomingExTimerByExId[ex.id]?.active" class="timer-mini">
+                    <span class="timer-label">전시 시작까지</span>
+                    <span class="timer-time">{{ upcomingExTimerByExId[ex.id].text }}</span>
+                  </div>
+
+                  <!-- ✅ 예정 전시의 특강(문구만 + 각 특강별 타이머) -->
+                  <div v-if="upcomingLecturesByExId[ex.id]?.length" class="upcoming-lectures">
+                    <div class="ul-kicker">관련 특강</div>
+
+                    <ul class="ul-list">
+                      <li v-for="l in upcomingLecturesByExId[ex.id]" :key="l.id" class="ul-item">
+                        <div class="ul-row">
+                          <div class="ul-text">
+                            <span class="ul-title">{{ l.title || l.name || "특강" }}</span>
+                            <span class="ul-dot">·</span>
+                            <span class="ul-dt">{{ lectureDateTimeText(l) || "—" }}</span>
+                          </div>
+
+                          <!-- ✅ 예정 특강 타이머: 각 특강 dateTime 기준 -->
+                          <div v-if="upcomingLectureTimerById[l.id]?.active" class="timer-mini">
+                            <span class="timer-label">특강 시작까지</span>
+                            <span class="timer-time">{{ upcomingLectureTimerById[l.id].text }}</span>
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </li>
+            </ul>
+
+            <div v-else class="upcoming-empty">예정 전시가 없습니다.</div>
           </div>
         </div>
       </div>
@@ -117,14 +125,12 @@ import { collection, doc, getDoc, getDocs, limit, orderBy, query } from "firebas
 import { db } from "@/lib/firebase";
 
 /**
- * ✅ 타이머 유틸(모듈)
- * - 아래 파일은 이전에 추가했던 모듈 기준
- *   FILE: src/lib/timeCountdown.js
+ * FILE: src/lib/timeCountdown.js
  */
-import { toMs, endOfDayMs, formatDuration } from "@/lib/timeCountdown";
+import { toMs, formatDuration } from "@/lib/timeCountdown";
 
 const exhibitions = ref([]);
-const lectureMap = ref({}); // { [lectureId]: lectureDoc }
+const lectureMap = ref({});
 const error = ref("");
 
 /** shared ticker (1초) */
@@ -143,7 +149,6 @@ onBeforeUnmount(() => {
 });
 
 function toTime(v) {
-  // (기존 함수 유지)
   if (!v) return null;
   if (typeof v === "object" && typeof v.toDate === "function") return v.toDate().getTime();
   if (v instanceof Date) return v.getTime();
@@ -178,18 +183,49 @@ function lectureDateTimeText(l) {
   return formatKstYmdHm(l?.dateTime);
 }
 
-function pickHero(list) {
+/** ✅ KST 날짜 경계 고정(핵심 수정)
+ * - Firestore Timestamp가 어떤 timezone/00:00로 들어와도
+ *   "KST의 그 날짜" 기준으로 00:00 / 23:59:59.999를 만들어줌
+ */
+const KST_OFFSET = 9 * 60 * 60 * 1000;
+
+function kstYmdFromAny(v) {
+  const ms = toMs(v);
+  if (!Number.isFinite(ms)) return null;
+  const d = new Date(ms + KST_OFFSET); // KST로 이동
+  return { y: d.getUTCFullYear(), m: d.getUTCMonth(), day: d.getUTCDate() };
+}
+
+function kstStartOfDayMs(v) {
+  const ymd = kstYmdFromAny(v);
+  if (!ymd) return null;
+  return Date.UTC(ymd.y, ymd.m, ymd.day) - KST_OFFSET;
+}
+
+function kstEndOfDayMs(v) {
+  const ymd = kstYmdFromAny(v);
+  if (!ymd) return null;
+  return Date.UTC(ymd.y, ymd.m, ymd.day + 1) - KST_OFFSET - 1;
+}
+
+/**
+ * ✅ 메인(현 전시) 선택 규칙
+ * - startDate가 현재보다 미래면 메인 제외
+ * - startDate <= now 중 최신을 메인
+ */
+function pickCurrentHero(list, now) {
   const clean = (list ?? [])
     .filter((x) => x && x.deleted !== true)
     .map((x) => ({
       ...x,
-      _s: toTime(x.startDate),
-      _u: toTime(x.updatedAt || x.createdAt) ?? -Infinity,
+      _s: toMs(x.startDate),
+      _u: toMs(x.updatedAt || x.createdAt) ?? -Infinity,
     }))
-    .filter((x) => x._s !== null)
+    .filter((x) => Number.isFinite(x._s) && x._s <= now)
     .sort((a, b) => (b._s !== a._s ? b._s - a._s : b._u - a._u));
 
   if (!clean.length) return null;
+
   const top = clean[0]._s;
   const group = clean.filter((x) => x._s === top);
   return group.find((x) => x.imageUrl?.trim()) || group[0];
@@ -212,9 +248,27 @@ async function loadLecturesByIds(ids) {
   return res.filter(Boolean);
 }
 
-/** ✅ 모든 참조 lectureIds를 한 번에 로드(중복 제거) */
+const heroExhibition = computed(() => pickCurrentHero(exhibitions.value, nowMs.value));
+
+/** ✅ 예정 전시: startDate가 현재보다 미래면 무조건 예정 */
+const upcomingExhibitions = computed(() => {
+  const heroId = heroExhibition.value?.id;
+
+  return (exhibitions.value ?? [])
+    .filter((x) => x && x.id && x.deleted !== true)
+    .filter((x) => x.id !== heroId)
+    .map((x) => ({
+      ...x,
+      _s: toMs(x.startDate) ?? -Infinity,
+      _u: toMs(x.updatedAt || x.createdAt) ?? -Infinity,
+    }))
+    .filter((x) => Number.isFinite(x._s) && x._s > nowMs.value)
+    .sort((a, b) => (a._s !== b._s ? a._s - b._s : b._u - a._u));
+});
+
+/** ✅ 모든 참조 lectureIds 한 번에 로드(중복 제거) */
 async function loadAllReferencedLectures() {
-  const hero = pickHero(exhibitions.value);
+  const hero = heroExhibition.value;
   const upcoming = upcomingExhibitions.value;
 
   const ids = new Set();
@@ -231,9 +285,7 @@ async function loadAllReferencedLectures() {
 
   const list = await loadLecturesByIds(Array.from(ids));
   const map = {};
-  list.forEach((l) => {
-    map[l.id] = l;
-  });
+  list.forEach((l) => (map[l.id] = l));
   lectureMap.value = map;
 }
 
@@ -245,8 +297,6 @@ onMounted(async () => {
     error.value = String(e);
   }
 });
-
-const heroExhibition = computed(() => pickHero(exhibitions.value));
 
 const heroPeriod = computed(() => {
   const ex = heroExhibition.value;
@@ -279,23 +329,6 @@ const sortedLectures = computed(() => {
     .slice(0, 2);
 });
 
-/** ✅ 예정 전시 목록 (문구만 / 포스터 없음) */
-const upcomingExhibitions = computed(() => {
-  const heroId = heroExhibition.value?.id;
-  const n = nowMs.value;
-
-  return (exhibitions.value ?? [])
-    .filter((x) => x && x.id && x.deleted !== true)
-    .filter((x) => x.id !== heroId) // 상단 현 전시는 제외
-    .map((x) => ({
-      ...x,
-      _s: toMs(x.startDate) ?? -Infinity,
-      _u: toMs(x.updatedAt || x.createdAt) ?? -Infinity,
-    }))
-    .filter((x) => x._s !== -Infinity && x._s > n) // startDate가 미래인 것만
-    .sort((a, b) => (a._s !== b._s ? a._s - b._s : b._u - a._u)); // 가까운 예정부터
-});
-
 function upcomingPeriodText(ex) {
   const s = formatKstYmd(ex?.startDate);
   const e = ex?.endDate ? formatKstYmd(ex.endDate) : "상설";
@@ -312,23 +345,22 @@ const upcomingLecturesByExId = computed(() => {
       const l = lectureMap.value?.[String(id)];
       if (l) out.push(l);
     });
-    out.sort((a, b) => (toTime(a.dateTime) ?? 0) - (toTime(b.dateTime) ?? 0)); // 빠른 순
+    out.sort((a, b) => (toTime(a.dateTime) ?? 0) - (toTime(b.dateTime) ?? 0));
     map[ex.id] = out;
   });
   return map;
 });
 
 /** =========================
- *  ✅ 타이머 표시 로직
- *  - 0초(이하)면 active=false로 숨김
+ *  ✅ 타이머 (0초면 숨김)
  * ========================= */
 
-/** 현 진행전시 마감 타이머 */
+/** 현 진행전시 마감 타이머: endDate를 KST '그 날짜의 끝'으로 */
 const currentTimer = computed(() => {
   const ex = heroExhibition.value;
   if (!ex) return { active: false, text: "" };
 
-  const target = ex?.endDate ? endOfDayMs(ex.endDate) : null;
+  const target = ex?.endDate ? kstEndOfDayMs(ex.endDate) : null;
   if (!Number.isFinite(target)) return { active: false, text: "" };
 
   const remain = target - nowMs.value;
@@ -337,50 +369,44 @@ const currentTimer = computed(() => {
   return { active: true, text: formatDuration(remain) };
 });
 
-/** 현 특강별 타이머 (리스트 2개만 쓰는 구조라 가벼움) */
+/** 현 특강별 타이머 (리스트 2개만) */
 const lectureTimerById = computed(() => {
   const out = {};
   (sortedLectures.value ?? []).forEach((l) => {
     const target = toMs(l?.dateTime);
-    if (!Number.isFinite(target)) {
-      out[l.id] = { active: false, text: "" };
-      return;
-    }
+    if (!Number.isFinite(target)) return (out[l.id] = { active: false, text: "" });
     const remain = target - nowMs.value;
-    if (!(remain > 0)) {
-      out[l.id] = { active: false, text: "" };
-      return;
-    }
+    if (!(remain > 0)) return (out[l.id] = { active: false, text: "" });
     out[l.id] = { active: true, text: formatDuration(remain) };
   });
   return out;
 });
 
-/** 예정 전시별 타이머
- * - 예정 전시에 특강이 있으면: 가장 빠른 특강 dateTime 기준
- * - 없으면: 전시 startDate 기준
- */
-const upcomingTimerByExId = computed(() => {
+/** 예정 전시 타이머: startDate를 KST '그 날짜의 시작'으로 */
+const upcomingExTimerByExId = computed(() => {
   const out = {};
   upcomingExhibitions.value.forEach((ex) => {
-    const lecs = upcomingLecturesByExId.value?.[ex.id] || [];
-    const nextLectureMs = lecs.length ? toMs(lecs[0]?.dateTime) : null;
-
-    const target = Number.isFinite(nextLectureMs) ? nextLectureMs : toMs(ex?.startDate);
-    const label = Number.isFinite(nextLectureMs) ? "특강 시작까지" : "전시 시작까지";
-
-    if (!Number.isFinite(target)) {
-      out[ex.id] = { active: false, text: "", label };
-      return;
-    }
-
+    const target = kstStartOfDayMs(ex?.startDate);
+    if (!Number.isFinite(target)) return (out[ex.id] = { active: false, text: "" });
     const remain = target - nowMs.value;
-    if (!(remain > 0)) {
-      out[ex.id] = { active: false, text: "", label };
-      return;
-    }
+    if (!(remain > 0)) return (out[ex.id] = { active: false, text: "" });
+    out[ex.id] = { active: true, text: formatDuration(remain) };
+  });
+  return out;
+});
 
-    out[ex.id] = { active: true, text: formatDuration(remain), label };
+/** 예정 특강 타이머: 각 특강별 dateTime 그대로 */
+const upcomingLectureTimerById = computed(() => {
+  const out = {};
+  const map = upcomingLecturesByExId.value || {};
+  Object.keys(map).forEach((exId) => {
+    (map[exId] || []).forEach((l) => {
+      const target = toMs(l?.dateTime);
+      if (!Number.isFinite(target)) return (out[l.id] = { active: false, text: "" });
+      const remain = target - nowMs.value;
+      if (!(remain > 0)) return (out[l.id] = { active: false, text: "" });
+      out[l.id] = { active: true, text: formatDuration(remain) };
+    });
   });
   return out;
 });
@@ -389,21 +415,21 @@ const upcomingTimerByExId = computed(() => {
 <style scoped>
 .hero-inner {
   display: grid;
-  grid-template-columns: 200px 1fr; /* ✅ 포스터 폭 고정 */
+  grid-template-columns: 200px 1fr;
   gap: 28px;
 }
 
 .hero-poster {
-  width: 200px; /* ✅ 포스터 폭 고정 */
+  width: 200px;
   border-radius: 16px;
   overflow: hidden;
 }
 
 .poster-img {
   width: 100%;
-  height: auto; /* ✅ 세로는 이미지 비율대로 자동 */
+  height: auto;
   display: block;
-  object-fit: contain; /* ✅ 잘림 방지(높이 지정 없지만 안전장치) */
+  object-fit: contain;
 }
 
 .meta-card {
@@ -423,7 +449,7 @@ const upcomingTimerByExId = computed(() => {
   color: #555;
 }
 
-/* ✅ 타이머 */
+/* 타이머 */
 .timer-pill {
   margin-top: 10px;
   display: inline-flex;
@@ -460,64 +486,66 @@ const upcomingTimerByExId = computed(() => {
   font-variant-numeric: tabular-nums;
 }
 
-/* 특강 */
+/* 특강(현 전시) */
 .lecture-card {
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
-
 .lecture-head {
   margin-bottom: 10px;
 }
-
 .lecture-kicker {
   font-size: 12px;
   font-weight: 800;
 }
-
-/* ✅ 기본 블릿 제거 */
 .lecture-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
-
 .lecture-item {
   list-style: none;
   padding: 12px;
   border-radius: 14px;
   background: #fafafa;
 }
-
 .lecture-item + .lecture-item {
   margin-top: 12px;
 }
-
 .lec-title {
   font-size: 15px;
   font-weight: 800;
 }
-
 .lec-period {
   font-size: 13px;
   color: #555;
   margin-top: 4px;
 }
 
-/* ✅ 예정 전시 */
-.upcoming-card {
+/* 구분선 */
+.section-divider {
   margin-top: 18px;
   padding-top: 14px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid rgba(0, 0, 0, 0.10);
 }
+
+/* 예정 전시 */
 .upcoming-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   margin-bottom: 10px;
 }
 .upcoming-kicker {
   font-size: 12px;
   font-weight: 900;
 }
+.upcoming-sub {
+  font-size: 12px;
+  color: #777;
+}
+
 .upcoming-list {
   list-style: none;
   margin: 0;
@@ -541,6 +569,11 @@ const upcomingTimerByExId = computed(() => {
   font-size: 12px;
   color: #666;
 }
+.upcoming-empty {
+  font-size: 12px;
+  color: #777;
+  padding: 8px 0 0;
+}
 
 .upcoming-lectures {
   margin-top: 10px;
@@ -554,12 +587,22 @@ const upcomingTimerByExId = computed(() => {
   margin: 8px 0 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 .ul-item {
   list-style: none;
+}
+.ul-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ul-text {
   font-size: 12px;
   color: #555;
+  min-width: 0;
 }
 .ul-title {
   font-weight: 800;
