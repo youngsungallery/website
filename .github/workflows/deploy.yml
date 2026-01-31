@@ -46,8 +46,11 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Build (GH Pages)
-        run: npm run build:gh-pages
+      # ✅ 커스텀 도메인(루트 서비스) 기준 빌드로 전환
+      # - 네 프로젝트에서 Vite base를 DEPLOY_ENV로 나눴다면
+      #   여기 값을 CUSTOM_DOMAIN(또는 PROD) 등으로 맞춰서 처리하면 됨.
+      - name: Build (Custom Domain)
+        run: npm run build
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
           VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
@@ -55,7 +58,15 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_ADMIN_EMAIL: ${{ secrets.VITE_ADMIN_EMAIL }}
-          DEPLOY_ENV: GH_PAGES
+          DEPLOY_ENV: CUSTOM_DOMAIN
+
+      # ✅ (권장) 커스텀 도메인 유지용 CNAME 파일을 dist에 포함
+      # - 레포 Settings > Secrets and variables > Actions 에
+      #   PAGES_CNAME = yourdomain.com 형태로 추가해두면 됨.
+      - name: Add CNAME (optional but safe)
+        if: ${{ secrets.PAGES_CNAME != '' }}
+        run: |
+          echo "${{ secrets.PAGES_CNAME }}" > dist/CNAME
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
