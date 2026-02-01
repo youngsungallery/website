@@ -3,12 +3,11 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from "path";
 
-export default defineConfig(({ command }) => {
-  // 로컬(dev): /
-  // 커스텀 도메인(build): /
-  // GH Pages 프로젝트 경로(build + ENV): /website/
-  const isGhPagesBuild = command === "build" && process.env.DEPLOY_ENV === "GH_PAGES";
-  const base = isGhPagesBuild ? "/website/" : "/";
+export default defineConfig(() => {
+  // ✅ GitHub Pages + 커스텀 도메인(youngsungallery.com) 기준:
+  // - 사이트는 도메인 루트(/)에서 서비스됨
+  // - base를 /website/로 두면 404.html 리다이렉트가 ?p=를 계속 중첩시켜 414(URI Too Long) 루프가 발생할 수 있음
+  const base = "/";
 
   return {
     plugins: [vue()],
