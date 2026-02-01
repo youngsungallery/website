@@ -419,6 +419,18 @@ const upcomingLectureTimerById = computed(() => {
   gap: 28px;
 }
 
+/* ✅ 모바일에서 세로로 (포스터 -> 문구) */
+@media (max-width: 640px) {
+  .hero-inner {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .hero-poster {
+    width: 100%;
+  }
+}
+
 .hero-poster {
   width: 200px;
   border-radius: 16px;
