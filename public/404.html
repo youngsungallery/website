@@ -4,20 +4,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Redirecting…</title>
-
-    <script>
-      (function () {
-        var l = window.location;
-
-        // ✅ repo name 고정 (중요)
-        var repoBase = "/website";
-
-        // 원래 경로를 p로 담아서 repoBase의 index로 이동
-        var target = repoBase + "/?p=" + encodeURIComponent(l.pathname + l.search + l.hash);
-        l.replace(target);
-      })();
-    </script>
+    <title>Not Found</title>
   </head>
-  <body></body>
+  <body>
+    <!--
+      GitHub Pages에서 history 라우팅 새로고침 시 404가 뜨는 문제를
+      빌드 산출물에서 dist/404.html을 dist/index.html로 복사해서 해결합니다.
+      (package.json build 스크립트에서 처리)
+    -->
+  </body>
 </html>

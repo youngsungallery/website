@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:gh-pages": "cross-env DEPLOY_ENV=GH_PAGES vite build",
+    "build": "vite build && cp dist/index.html dist/404.html",
+    "build:gh-pages": "cross-env DEPLOY_ENV=GH_PAGES vite build && cp dist/index.html dist/404.html",
     "preview": "vite preview"
   },
   "dependencies": {
