@@ -29,9 +29,9 @@
               {{ heroPeriod || "—" }}
             </p>
 
-            <!-- ✅ 현 진행전시 타이머: 전시 마감 기준 (KST 날짜 경계) -->
+            <!-- ✅ hero 전시 타이머: 진행중이면 마감, 시작 전이면 시작 -->
             <div v-if="currentTimer.active" class="timer-pill">
-              <span class="timer-label">전시 마감까지</span>
+              <span class="timer-label">{{ currentTimer.label }}</span>
               <span class="timer-time">{{ currentTimer.text }}</span>
             </div>
 
@@ -209,25 +209,57 @@ function kstEndOfDayMs(v) {
 }
 
 /**
- * ✅ 메인(현 전시) 선택 규칙
- * - startDate가 현재보다 미래면 메인 제외
- * - startDate <= now 중 최신을 메인
+ * ✅ 메인 hero 선택 규칙 (요청 반영)
+ * 1) 진행중 전시( KST startDay <= now <= KST endDay )가 있으면 그것
+ * 2) 없으면 다음 예정 전시(가장 가까운 startDay)
+ * 3) 그것도 없으면 최근 과거 전시(가장 최근 startDay) 유지
+ *
+ * - imageUrl 있는 전시 우선
  */
 function pickCurrentHero(list, now) {
   const clean = (list ?? [])
     .filter((x) => x && x.deleted !== true)
-    .map((x) => ({
-      ...x,
-      _s: toMs(x.startDate),
-      _u: toMs(x.updatedAt || x.createdAt) ?? -Infinity,
-    }))
-    .filter((x) => Number.isFinite(x._s) && x._s <= now)
-    .sort((a, b) => (b._s !== a._s ? b._s - a._s : b._u - a._u));
+    .map((x) => {
+      const _s = kstStartOfDayMs(x.startDate);
+      const _e = x.endDate ? kstEndOfDayMs(x.endDate) : Infinity;
+      const _u = toMs(x.updatedAt || x.createdAt) ?? -Infinity;
+      return { ...x, _s, _e, _u };
+    })
+    .filter((x) => Number.isFinite(x._s) && Number.isFinite(x._e));
 
   if (!clean.length) return null;
 
-  const top = clean[0]._s;
-  const group = clean.filter((x) => x._s === top);
+  // 1) 진행중
+  const ongoing = clean
+    .filter((x) => x._s <= now && now <= x._e)
+    .sort((a, b) => (b._s !== a._s ? b._s - a._s : b._u - a._u));
+
+  if (ongoing.length) {
+    const top = ongoing[0]._s;
+    const group = ongoing.filter((x) => x._s === top);
+    return group.find((x) => x.imageUrl?.trim()) || group[0];
+  }
+
+  // 2) 다음 예정
+  const upcoming = clean
+    .filter((x) => x._s > now)
+    .sort((a, b) => (a._s !== b._s ? a._s - b._s : b._u - a._u));
+
+  if (upcoming.length) {
+    const top = upcoming[0]._s;
+    const group = upcoming.filter((x) => x._s === top);
+    return group.find((x) => x.imageUrl?.trim()) || group[0];
+  }
+
+  // 3) 최근 과거 유지
+  const past = clean
+    .filter((x) => x._s <= now)
+    .sort((a, b) => (b._s !== a._s ? b._s - a._s : b._u - a._u));
+
+  if (!past.length) return null;
+
+  const top = past[0]._s;
+  const group = past.filter((x) => x._s === top);
   return group.find((x) => x.imageUrl?.trim()) || group[0];
 }
 
@@ -355,18 +387,38 @@ const upcomingLecturesByExId = computed(() => {
  *  ✅ 타이머 (0초면 숨김)
  * ========================= */
 
-/** 현 진행전시 마감 타이머: endDate를 KST '그 날짜의 끝'으로 */
+/** ✅ hero 전시 타이머:
+ * - 시작 전(예정 hero): startDate(KST 시작) 기준 "전시 시작까지"
+ * - 진행중 hero: endDate(KST 끝) 기준 "전시 마감까지"
+ * - 종료된 hero(최근 유지): 숨김
+ */
 const currentTimer = computed(() => {
   const ex = heroExhibition.value;
-  if (!ex) return { active: false, text: "" };
+  if (!ex) return { active: false, label: "", text: "" };
 
-  const target = ex?.endDate ? kstEndOfDayMs(ex.endDate) : null;
-  if (!Number.isFinite(target)) return { active: false, text: "" };
+  const s = kstStartOfDayMs(ex.startDate);
+  const e = ex?.endDate ? kstEndOfDayMs(ex.endDate) : Infinity;
 
-  const remain = target - nowMs.value;
-  if (!(remain > 0)) return { active: false, text: "" };
+  if (!Number.isFinite(s) || !Number.isFinite(e)) return { active: false, label: "", text: "" };
 
-  return { active: true, text: formatDuration(remain) };
+  // 시작 전
+  if (nowMs.value < s) {
+    const remain = s - nowMs.value;
+    if (!(remain > 0)) return { active: false, label: "", text: "" };
+    return { active: true, label: "전시 시작까지", text: formatDuration(remain) };
+  }
+
+  // 진행중
+  if (s <= nowMs.value && nowMs.value <= e) {
+    const target = Number.isFinite(e) ? e : null;
+    if (!Number.isFinite(target)) return { active: false, label: "", text: "" };
+    const remain = target - nowMs.value;
+    if (!(remain > 0)) return { active: false, label: "", text: "" };
+    return { active: true, label: "전시 마감까지", text: formatDuration(remain) };
+  }
+
+  // 종료됨(최근 유지)
+  return { active: false, label: "", text: "" };
 });
 
 /** 현 특강별 타이머 (리스트 2개만) */
